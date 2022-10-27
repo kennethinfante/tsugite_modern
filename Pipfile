@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+multipledispatch = "==0.6.0"
+numpy = "==1.20.3"
+pillow = "==8.3.2"
+pyopengl = "==3.1.5"
+pyqt5 = "==5.15.4"
+pyrr = "==0.10.3"
+six = "==1.15.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
