@@ -16,7 +16,7 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from math import tan, pi
-from Types import Types
+from JointTypes import JointType
 from Geometries import Geometries
 from ViewSettings import ViewSettings
 from Show import Show
@@ -182,14 +182,14 @@ class GLWidget(QGLWidget):
                     self.type.combine_and_buffer_indices()
                     self.type.mesh.select.suggstate=-1
             #GALLERY PICK -- not implemented currently
-            #elif type.mesh.select.gallstate>=0:
-            #    index = type.mesh.select.gallstate
-            #    if index<len(type.gals):
-            #        type.mesh = Geometries(type,hfs=type.gals[index].height_fields)
-            #        type.gals = []
+            #elif joint_type.mesh.select.gallstate>=0:
+            #    index = joint_type.mesh.select.gallstate
+            #    if index<len(joint_type.gals):
+            #        joint_type.mesh = Geometries(joint_type,hfs=joint_type.gals[index].height_fields)
+            #        joint_type.gals = []
             #        view_opt.gallery=False
-            #        type.gallary_start_index = -20
-            #        type.combine_and_buffer_indices()
+            #        joint_type.gallary_start_index = -20
+            #        joint_type.combine_and_buffer_indices()
             else: self.click_time = time.time()
         elif e.button() == Qt.RightButton:
             self.show.view.start_rotation_xy(self.parent.scaling*e.x(),self.parent.scaling*e.y())

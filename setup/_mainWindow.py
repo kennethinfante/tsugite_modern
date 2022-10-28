@@ -16,7 +16,7 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
-from Types import Types
+from JointTypes import JointType
 from Geometries import Geometries
 from ViewSettings import ViewSettings
 from Show import Show

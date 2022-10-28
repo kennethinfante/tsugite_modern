@@ -2,15 +2,18 @@ from OpenGL.GL import *
 import numpy as np
 from PIL import Image
 
+from TypingHelper import *
+
 class ElementProperties:
-    def __init__(self, draw_type, count, start_index, n):
+    def __init__(self, draw_type: DrawTypes, count, start_index, n: int) -> None:
         self.draw_type = draw_type
         self.count = count
         self.start_index = start_index
         self.n = n
 
 class Buffer:
-    def __init__(self,parent):
+    def __init__(self, parent) -> None:
+        # parent is the JointType, cannot import for type hinting cause it results to circular dependency
         self.parent = parent
         self.VBO = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.VBO)
@@ -24,7 +27,7 @@ class Buffer:
         image = Image.open("textures/contact_area.jpg")
         self.img_data_cont = np.array(list(image.getdata()), np.uint8)
 
-    def buffer_vertices(self):
+    def buffer_vertices(self) -> None:
         try:
             cnt = 6*len(self.parent.vertices)
             glBufferData(GL_ARRAY_BUFFER, cnt, self.parent.vertices, GL_DYNAMIC_DRAW)
@@ -52,6 +55,6 @@ class Buffer:
         glBindTexture(GL_TEXTURE_2D, 2)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 400, 400, 0, GL_RGB, GL_UNSIGNED_BYTE, self.img_data_cont)
 
-    def buffer_indices(self):
+    def buffer_indices(self) -> None:
         cnt = 4*len(self.parent.indices)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, cnt, self.parent.indices, GL_DYNAMIC_DRAW)

@@ -5,7 +5,7 @@ from Fabrication import RegionVertex
 from Misc import FixedSide, FixedSides
 
 
-def get_ordered_outline(verts: list[RegionVertex]) -> None:
+def get_ordered_outline(verts: list[RegionVertex]):
     ord_verts = []
 
     # Start ordered vertices with the first item (simultaneously remove from main list)
@@ -455,7 +455,8 @@ def get_neighbors_2d(ind: ArrayLike, reg_inds: ArrayLike, lay_mat: ArrayLike, n:
         values.append(temp2)
     return in_out, values
 
-def get_region_outline(reg_inds: ArrayLike, lay_mat: ArrayLike, fixed_neighbors: ArrayLike, n: ArrayLike) -> list[RegionVertex]:
+def get_region_outline(reg_inds: ArrayLike, lay_mat: ArrayLike, fixed_neighbors: ArrayLike, n: ArrayLike) \
+        -> list[RegionVertex]:
     # also duplicate vertices on diagonal
     reg_verts = []
     for i in range(lay_mat.shape[0]+1):
@@ -477,7 +478,7 @@ def get_region_outline(reg_inds: ArrayLike, lay_mat: ArrayLike, fixed_neighbors:
                     reg_verts.append(RegionVertex(ind,ind,neighbors,neighbor_values))
     return reg_verts
 
-def get_breakable_voxels(mat,fixed_sides,sax,n):
+def get_breakable_voxels(mat: ArrayLike, fixed_sides: FixedSides, sax:ArrayLike, n: ArrayLike):
     breakable = False
     outline_indices = []
     voxel_indices = []
@@ -580,7 +581,7 @@ def get_breakable_voxels(mat,fixed_sides,sax,n):
 
     return breakable,outline_indices,voxel_indices
 
-def is_fab_direction_ok(mat,ax,n):
+def is_fab_direction_ok(mat,ax,n) -> tuple[bool, int]:
     fab_dir = 1
     dim = len(mat)
     for dir in range(2):

@@ -9,8 +9,8 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from math import tan, pi
-# My files
-from Types import Types
+
+from JointTypes import JointType
 from Show import Show
 
 
@@ -36,8 +36,8 @@ def initializeGL(self):
         ext = "nc"
     elif self.parent.findChild(QRadioButton, "radioSBP").isChecked():
         ext = "sbp"
-    self.type = Types(self, fs=[[[2, 0]], [[2, 1]]], sax=sax, dim=dim, ang=ang, td=[dx, dy, dz], fabtol=tol, fabdia=dia,
-                      fspe=spe, fspi=spi, fabext=ext, align_ax=aax, incremental=inc, finterp=fin)
+    self.type = JointType(self, fs=[[[2, 0]], [[2, 1]]], sax=sax, dim=dim, ang=ang, td=[dx, dy, dz], fabtol=tol, fabdia=dia,
+                          fspe=spe, fspi=spi, fabext=ext, align_ax=aax, incremental=inc, finterp=fin)
     self.show = Show(self, self.type)
 
 

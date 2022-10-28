@@ -1,6 +1,6 @@
 # Tsugite
 
-NOTE: Original project is here `marialarsson/tsugite`. I just creating a new copy cause I intend to change and study this but not really contribute cause I'm still a beginner. Project is good example of learning **computer graphics, computational geometry, OpenGL and numpy.**
+NOTE: Original project is [here](https://github.com/marialarsson/tsugite). I'm just creating a new copy cause I intend to change and study this but not really contribute cause I'm still a beginner. Project is good example of learning **computer graphics, computational geometry, OpenGL and numpy.**
 
 ## Interactive Design and Fabrication of Wood Joints
 

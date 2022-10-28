@@ -32,7 +32,7 @@ class FixedSide:
         return unique
 
 class FixedSides:
-    def __init__(self, parent, # from analysis, parent is Types class
+    def __init__(self, parent, # from analysis, parent is JointType class
                  side_str: Optional[str] = None,
                  fs: Optional[list[FixedSide]] = None) -> None:
 

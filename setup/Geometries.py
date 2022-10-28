@@ -5,12 +5,11 @@ import random
 import math
 import pyrr
 from Selection import Selection
-# from Fabrication import Fabrication
+from Fabrication import Fabrication
 from Evaluation import Evaluation
 
 # ignore error by VS Code - will result to buffer error if removed
-from Buffer import Buffer
-from Buffer import ElementProperties
+from Buffer import Buffer, ElementProperties
 import copy
 import os
 from Misc import FixedSide
@@ -589,7 +588,7 @@ class Geometries:
         self.parent = parent
         self.fab_directions = [0,1] #Initiate list of fabrication directions
         for i in range(1,self.parent.noc-1): self.fab_directions.insert(1,1)
-        if len(hfs)==0: self.height_fields = get_random_height_fields(self.parent.dim,self.parent.noc) #Initiate a random joint geometry
+        if len(hfs)==0: self.height_fields = get_random_height_fields(self.parent.dim, self.parent.noc) #Initiate a random joint geometry
         else: self.height_fields = hfs
         if self.mainmesh: self.select = Selection(self)
         self.voxel_matrix_from_height_fields(first=True)

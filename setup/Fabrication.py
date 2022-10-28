@@ -1,12 +1,9 @@
 import numpy as np
-from numpy.typing import ArrayLike, DTypeLike
 
 import math
 import os
 
-from typing import Any, Optional
-# aliases
-FilePath = str
+from TypingHelper import *
 
 class MillVertex:
     def __init__(self, pt: ArrayLike,
@@ -62,7 +59,7 @@ class MillVertex:
             self.arc_ctr = np.array(self.arc_ctr)
 
 
-def angle_between(vector_1: ArrayLike, vector_2: ArrayLike, normal_vector: list = []) -> ArrayLike:
+def angle_between(vector_1: ArrayLike, vector_2: ArrayLike, normal_vector: list = []) -> DegreeArray:
     unit_vector_1 = vector_1 / np.linalg.norm(vector_1)
     unit_vector_2 = vector_2 / np.linalg.norm(vector_2)
     dot_product = np.dot(unit_vector_1, unit_vector_2)
