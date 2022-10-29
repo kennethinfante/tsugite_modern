@@ -759,7 +759,7 @@
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
-    <addaction name="actionSaveas"/>
+    <addaction name="actionSaveAs"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -998,7 +998,7 @@
     <string>Back</string>
    </property>
   </action>
-  <action name="actionSaveas">
+  <action name="actionSaveAs">
    <property name="text">
     <string>Save As...</string>
    </property>

@@ -101,12 +101,12 @@ def get_friction_and_contact_areas(mat, slides, fixed_sides, n) -> tuple[int, li
             for i in range(len(mat)):
                 for j in range(len(mat)):
                     nind = [i, j]
-                    axind = side.dir * (len(mat) - 1)
+                    axind = side.direction * (len(mat) - 1)
                     nind.insert(side.ax, axind)
                     if mat[tuple(nind)] != n:  # neighboring another timber
                         contact += 1
                         find = nind.copy()
-                        find[side.ax] += side.dir
+                        find[side.ax] += side.direction
                         cfaces.append([side.ax, list(find)])
                         if side.ax in friction_axes:
                             friction += 1
@@ -206,8 +206,8 @@ def add_fixed_sides(mat: ArrayLike, fixed_sides: FixedSides, add: int = 0) -> Ar
     pad_val = [[-1, -1], [-1, -1], [-1, -1]]
     for n in range(len(fixed_sides)):
         for side in fixed_sides[n]:
-            pad_loc[side.ax][side.dir] = 1
-            pad_val[side.ax][side.dir] = n + add
+            pad_loc[side.ax][side.direction] = 1
+            pad_val[side.ax][side.direction] = n + add
     pad_loc = tuple(map(tuple, pad_loc))
     pad_val = tuple(map(tuple, pad_val))
     mat = np.pad(mat, pad_loc, 'constant', constant_values=pad_val)
@@ -219,8 +219,8 @@ def add_fixed_sides(mat: ArrayLike, fixed_sides: FixedSides, add: int = 0) -> Ar
                     if side.ax == side2.ax: continue
                     for i in range(dim + 2):
                         ind = [i, i, i]
-                        ind[side.ax] = side.dir * (mat.shape[side.ax] - 1)
-                        ind[side2.ax] = side2.dir * (mat.shape[side2.ax] - 1)
+                        ind[side.ax] = side.direction * (mat.shape[side.ax] - 1)
+                        ind[side2.ax] = side2.direction * (mat.shape[side2.ax] - 1)
                         try:
                             mat[tuple(ind)] = -1
                         except:
@@ -322,10 +322,10 @@ def is_connected_to_fixed_side(indices: ArrayLike, mat: ArrayLike, fixed_sides: 
     d = len(mat)
     for ind in indices:
         for side in fixed_sides:
-            if ind[side.ax] == 0 and side.dir == 0:
+            if ind[side.ax] == 0 and side.direction == 0:
                 connected = True
                 break
-            elif ind[side.ax] == d - 1 and side.dir == 1:
+            elif ind[side.ax] == d - 1 and side.direction == 1:
                 connected = True
                 break
         if connected: break
@@ -427,7 +427,7 @@ def is_connected_to_fixed_side_2d(inds: ArrayLike, fixed_sides: FixedSides, ax: 
         fax2d.pop(ax)
         fax2d = fax2d.index(1)
         for ind in inds:
-            if ind[fax2d] == side.dir * (dim - 1):
+            if ind[fax2d] == side.direction * (dim - 1):
                 connected = True
                 break
         if connected: break
@@ -594,7 +594,7 @@ def get_breakable_voxels(mat: ArrayLike, fixed_sides: FixedSides, sax: ArrayLike
                         outline.append(outline[0])
 
                         for dir in range(0, 2):
-                            # if not fixed_neighbors[dir]: continue
+                            # if not fixed_neighbors[direction]: continue
                             for i in range(len(outline) - 1):
                                 for j in range(2):
                                     oind = outline[i + j].ind.copy()

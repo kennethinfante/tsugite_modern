@@ -190,8 +190,8 @@ class JointType:
         for i, sides in enumerate(self.fixed.sides):
             for side in sides:
                 if side.ax == sax:
-                    if side.dir == 0 and i == 0: continue
-                    if side.dir == 1 and i == self.noc - 1: continue
+                    if side.direction == 0 and i == 0: continue
+                    if side.direction == 1 and i == self.noc - 1: continue
                     blocked = True
         if blocked:
             return False, "This sliding direction is blocked"
@@ -304,7 +304,7 @@ class JointType:
             self.dim) + os.sep + "fs_"
         for i in range(len(self.fixed.sides)):
             for fs in self.fixed.sides[i]:
-                location += str(fs.ax) + str(fs.dir)
+                location += str(fs.ax) + str(fs.direction)
             if i != len(self.fixed.sides) - 1: location += ("_")
         location += os.sep + "allvalid"
         maxi = len(os.listdir(location)) - 1
@@ -364,7 +364,7 @@ class JointType:
         for n in range(len(self.fixed.sides)):
             for i in range(len(self.fixed.sides[n])):
                 file.write(str(int(self.fixed.sides[n][i].ax)) + ",")
-                file.write(str(int(self.fixed.sides[n][i].dir)))
+                file.write(str(int(self.fixed.sides[n][i].direction)))
                 if i != len(self.fixed.sides[n]) - 1: file.write(".")
             if n != len(self.fixed.sides) - 1: file.write(":")
 
@@ -576,14 +576,14 @@ def pad_layer_mat_with_fixed_sides(mat, joint_type: JointType, n):
             axes[oside.ax] = 1
             axes.pop(joint_type.sax)
             oax = axes.index(1)
-            pad_loc[oax][oside.dir] = 1
-            pad_val[oax][oside.dir] = n2
+            pad_loc[oax][oside.direction] = 1
+            pad_val[oax][oside.direction] = n2
     # If it is an angled joint, pad so that the edge of a joint located on an edge will be trimmed well
     # if abs(joint_type.angle-90)>1 and len(joint_type.fixed.sides[n])==1 and joint_type.fixed.sides[n][0].ax!=joint_type.sax:
     #    print("get here")
     #    ax = joint_type.fixed.sides[n][0].ax
-    #    dir = joint_type.fixed.sides[n][0].dir
-    #    odir = 1-dir
+    #    direction = joint_type.fixed.sides[n][0].direction
+    #    odir = 1-direction
     #    axes = [0,0,0]
     #    axes[ax] = 1
     #    axes.pop(joint_type.sax)
@@ -612,8 +612,8 @@ def pad_layer_mat_with_fixed_sides(mat, joint_type: JointType, n):
                     ax2 = axes.index(1)
                     if ax1 == ax2: continue
                     ind = [0, 0]
-                    ind[ax1] = side1.dir * (mat.shape[ax1] - 1)
-                    ind[ax2] = side2.dir * (mat.shape[ax2] - 1)
+                    ind[ax1] = side1.direction * (mat.shape[ax1] - 1)
+                    ind[ax2] = side2.direction * (mat.shape[ax2] - 1)
                     mat[tuple(ind)] = -1
     return mat, pad_loc
 
@@ -778,7 +778,7 @@ def edge_milling_path(type, lay_num, n):
 
         # ax direction of current fixed side
         ax = type.fixed.sides[n][0].ax
-        dir = type.fixed.sides[n][0].dir
+        dir = type.fixed.sides[n][0].direction
         # oax - axis perp. to component axis
         oax = [0, 1, 2]
         oax.remove(type.sax)

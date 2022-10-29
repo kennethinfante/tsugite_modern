@@ -16,9 +16,9 @@ from OpenGL.GLU import *
 
 from _mainWindow import *
 
-#deal with dpi
-QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True) #enable highdpi scaling
-QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True) #use highdpi icons
+# deal with dpi
+QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)  # enable highdpi scaling
+QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)  # use highdpi icons
 app = QApplication(sys.argv)
 movie = QMovie("tsugite_loading_3d.gif")
 
@@ -30,8 +30,8 @@ start = time.time()
 
 while movie.state() == QMovie.Running and time.time() < start + 1:
     app.processEvents()
-#screen = app.screens()[0]
-#dpi = screen.physicalDotsPerInch()
+# screen = app.screens()[0]
+# dpi = screen.physicalDotsPerInch()
 
 window = mainWindow()
 window.show()

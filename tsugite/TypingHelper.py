@@ -3,7 +3,7 @@ from numpy.typing import ArrayLike, DTypeLike
 from OpenGL.constant import Constant as glConstant
 
 # aliases
-DegreeArray = ArrayLike         # for the return type of arccos
+DegreeArray = ArrayLike         # for the return joint_type of arccos
 ZeroArray = ArrayLike
 DotProduct = ArrayLike          # Returns the dot product of a and b. If both are scalars or both are 1-D arrays then
                                 # a scalar is returned; otherwise an array is returned.

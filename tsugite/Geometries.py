@@ -84,10 +84,10 @@ def joint_face_indices(self, all_indices, mat, fixed_sides, n, offset, global_of
         start = d * d * d
         if len(fixed_sides) > 0:
             for side in fixed_sides:
-                a1, b1, c1, d1 = get_corner_indices(side.ax, side.dir, self.parent.dim)
+                a1, b1, c1, d1 = get_corner_indices(side.ax, side.direction, self.parent.dim)
                 step = 2
                 if len(self.parent.fixed.sides[n]) == 2: step = 1
-                off = 24 * side.ax + 12 * side.dir + 4 * step
+                off = 24 * side.ax + 12 * side.direction + 4 * step
                 a0, b0, c0, d0 = start + off, start + off + 1, start + off + 2, start + off + 3
                 # Add component side to indices
                 indices_ends.extend([a0, b0, d0, c0])  # bottom face
@@ -146,10 +146,10 @@ def joint_area_face_indices(self, all_indices, mat, area_faces, n):
     if len(self.parent.fixed.sides[n]) > 0:
         for side in self.parent.fixed.sides[n]:
             offset = side.ax * self.parent.vn
-            a1, b1, c1, d1 = get_corner_indices(side.ax, side.dir, self.parent.dim)
+            a1, b1, c1, d1 = get_corner_indices(side.ax, side.direction, self.parent.dim)
             step = 2
             if len(self.parent.fixed.sides[n]) == 2: step = 1
-            off = 24 * side.ax + 12 * side.dir + 4 * step
+            off = 24 * side.ax + 12 * side.direction + 4 * step
             a0, b0, c0, d0 = start + off, start + off + 1, start + off + 2, start + off + 3
             # Add component side to indices
             indices_ends.extend([a0 + offset, b0 + offset, d0 + offset, c0 + offset])  # bottom face
@@ -188,9 +188,9 @@ def face_neighbors(mat, ind, ax, n, fixed_sides):
             for fixed_side in fixed_sides:
                 ind3 = np.delete(ind2, fixed_side.ax)
                 if np.all(ind3 >= 0) and np.all(ind3 < dim):
-                    if ind2[fixed_side.ax] < 0 and fixed_side.dir == 0:
+                    if ind2[fixed_side.ax] < 0 and fixed_side.direction == 0:
                         val = n
-                    elif ind2[fixed_side.ax] >= dim and fixed_side.dir == 1:
+                    elif ind2[fixed_side.ax] >= dim and fixed_side.direction == 1:
                         val = n
         values.append(val)
     values = np.array(values)
@@ -242,10 +242,10 @@ def joint_line_indices(self, all_indices, n, offset, global_offset=0):
     # Outline of component base
     start = d * d * d
     for side in fixed_sides:
-        a1, b1, c1, d1 = get_corner_indices(side.ax, side.dir, self.parent.dim)
+        a1, b1, c1, d1 = get_corner_indices(side.ax, side.direction, self.parent.dim)
         step = 2
         if len(self.parent.fixed.sides[n]) == 2: step = 1
-        off = 24 * side.ax + 12 * side.dir + 4 * step
+        off = 24 * side.ax + 12 * side.direction + 4 * step
         a0, b0, c0, d0 = start + off, start + off + 1, start + off + 2, start + off + 3
         indices.extend([a0, b0, b0, d0, d0, c0, c0, a0])
         indices.extend([a0, a1, b0, b1, c0, c1, d0, d1])
@@ -274,9 +274,9 @@ def line_neighbors(self, ind, ax, n):
                     for side in self.parent.fixed.sides[n2]:
                         ind3 = np.delete(ind2, side.ax)
                         if np.all(ind3 >= 0) and np.all(ind3 < self.parent.dim):
-                            if ind2[side.ax] < 0 and side.dir == 0:
+                            if ind2[side.ax] < 0 and side.direction == 0:
                                 val = n2
-                            elif ind2[side.ax] >= self.parent.dim and side.dir == 1:
+                            elif ind2[side.ax] >= self.parent.dim and side.direction == 1:
                                 val = n2
             values.append(val)
     values = np.array(values)
@@ -439,10 +439,10 @@ def joint_top_face_indices(self, all_indices, n, noc, offset):
     d = self.parent.dim + 1
     start = d * d * d
     for side in self.parent.fixed.sides[n]:
-        a1, b1, c1, d1 = get_corner_indices(side.ax, side.dir, self.parent.dim)
+        a1, b1, c1, d1 = get_corner_indices(side.ax, side.direction, self.parent.dim)
         step = 2
         if len(self.parent.fixed.sides[n]) == 2: step = 1
-        off = 24 * side.ax + 12 * side.dir + 4 * step
+        off = 24 * side.ax + 12 * side.direction + 4 * step
         a0, b0, c0, d0 = start + off, start + off + 1, start + off + 2, start + off + 3
         # Add component side to indices
         indices.extend([a0, b0, d0, c0])  # bottom face
@@ -467,7 +467,7 @@ def joint_top_face_indices(self, all_indices, n, noc, offset):
 def joint_selected_top_line_indices(self, select, all_indices):
     # Make indices of lines for drawing method GL_LINES
     n = select.n
-    dir = select.dir
+    dir = select.direction
     offset = n * self.parent.vn
     sax = self.parent.sax
     h = self.height_fields[n - dir][tuple(select.faces[0])]
@@ -515,7 +515,7 @@ def component_outline_indices(self, all_indices, fixed_sides, n, offset):
     # Outline of component base
     # 1) Base of first fixed side
     ax = fixed_sides[0].ax
-    dir = fixed_sides[0].dir
+    dir = fixed_sides[0].direction
     step = 2
     if len(fixed_sides) == 2: step = 1
     off = 24 * ax + 12 * dir + 4 * step
@@ -523,7 +523,7 @@ def component_outline_indices(self, all_indices, fixed_sides, n, offset):
     # 2) Base of first fixed side OR top of component
     if len(fixed_sides) == 2:
         ax = fixed_sides[1].ax
-        dir = fixed_sides[1].dir
+        dir = fixed_sides[1].direction
         off = 24 * ax + 12 * dir + 4 * step
         a1, b1, c1, d1 = start + off, start + off + 1, start + off + 2, start + off + 3
     else:

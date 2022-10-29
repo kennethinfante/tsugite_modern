@@ -59,14 +59,14 @@ class Selection:
         self.val = 0
 
     # to check
-    def update_pick(self, x, y, n, dir) -> None:
+    def update_pick(self, x, y, n, direction) -> None:
         self.n = n
         self.x = x
         self.y = y
-        self.dir = dir
-        if self.x != None and self.y != None:
+        self.direction = direction
+        if self.x is not None and self.y is not None:
             if self.shift:
-                self.faces = get_same_height_neighbors(self.parent.height_fields[n - dir], [np.array([self.x, self.y])])
+                self.faces = get_same_height_neighbors(self.parent.height_fields[n - direction], [np.array([self.x, self.y])])
             else:
                 self.faces = [np.array([self.x, self.y])]
 
@@ -74,11 +74,11 @@ class Selection:
     def start_pull(self, mouse_pos) -> None:
         self.state = 2
         self.start_pos = np.array([mouse_pos[0], -mouse_pos[1]])
-        self.start_height = self.parent.height_fields[self.n - self.dir][self.x][self.y]
+        self.start_height = self.parent.height_fields[self.n - self.direction][self.x][self.y]
         self.parent.parent.combine_and_buffer_indices()  # for selection area
 
     def end_pull(self) -> None:
-        if self.val != 0: self.parent.edit_height_fields(self.faces, self.current_height, self.n, self.dir)
+        if self.val != 0: self.parent.edit_height_fields(self.faces, self.current_height, self.n, self.direction)
         self.state = -1
         self.refresh = True
 
@@ -136,7 +136,7 @@ class Selection:
         if move_dist > 0.01:
             ## Get component direction vector
             comp_ax = self.parent.parent.fixed.sides[self.n][0].ax  # component axis
-            comp_dir = self.parent.parent.fixed.sides[self.n][0].dir
+            comp_dir = self.parent.parent.fixed.sides[self.n][0].direction
             comp_len = 2.5 * (2 * comp_dir - 1) * self.parent.parent.component_size
             comp_vec = comp_len * unitize(self.parent.parent.pos_vecs[comp_ax])
             ## Flatten vector to screen
@@ -180,7 +180,7 @@ class Selection:
                 ###
                 self.new_fixed_sides_for_display = []
                 for i in range(len(self.parent.parent.fixed.sides[self.n])):
-                    ndir = self.parent.parent.fixed.sides[self.n][i].dir
+                    ndir = self.parent.parent.fixed.sides[self.n][i].direction
                     ordered = False
                     if comp_ax < oax and oax - comp_ax == 1:
                         ordered = True
@@ -191,8 +191,8 @@ class Selection:
                     if screen_dir > 0: ndir = 1 - ndir
                     side = FixedSide(oax, ndir)
                     self.new_fixed_sides_for_display.append(side)
-                    if side.ax == sax and side.dir == 0 and self.n != 0: blocked = True; break
-                    if side.ax == sax and side.dir == 1 and self.n != noc - 1: blocked = True; break
+                    if side.ax == sax and side.direction == 0 and self.n != 0: blocked = True; break
+                    if side.ax == sax and side.direction == 1 and self.n != noc - 1: blocked = True; break
             else:  # Timber moveing mode
                 length_ratio = linalg.norm(mouse_vec) / linalg.norm(comp_vec)
                 side_num = len(self.parent.parent.fixed.sides[self.n])

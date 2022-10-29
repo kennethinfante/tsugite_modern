@@ -204,7 +204,7 @@ class Fabrication:
         for n in range(self.parent.noc):
             fdir = self.parent.mesh.fab_directions[n]
             comp_ax = self.parent.fixed.sides[n][0].ax
-            comp_dir = self.parent.fixed.sides[n][0].dir  # component direction
+            comp_dir = self.parent.fixed.sides[n][0].direction  # component direction
             comp_vec = self.parent.pos_vecs[comp_ax]
             if comp_dir == 0 and comp_ax != self.parent.sax: comp_vec = -comp_vec
             comp_vec = np.array([comp_vec[coords[0]], comp_vec[coords[1]], comp_vec[coords[2]]])

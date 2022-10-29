@@ -12,8 +12,8 @@ class ElementProperties:
         self.n = n
 
 class Buffer:
-    def __init__(self, parent) -> None:
-        # parent is the JointType, cannot import for type hinting cause it results to circular dependency
+    def __init__(self, parent):
+        # parent is the JointType, cannot import for joint_type hinting cause it results to circular dependency
         self.parent = parent
         self.VBO = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.VBO)
@@ -27,7 +27,8 @@ class Buffer:
         image = Image.open("textures/contact_area.jpg")
         self.img_data_cont = np.array(list(image.getdata()), np.uint8)
 
-    def buffer_vertices(self) -> None:
+    # TODO: Buffer has a return?
+    def buffer_vertices(self):
         try:
             cnt = 6*len(self.parent.vertices)
             glBufferData(GL_ARRAY_BUFFER, cnt, self.parent.vertices, GL_DYNAMIC_DRAW)
