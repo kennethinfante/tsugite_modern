@@ -5,29 +5,29 @@ from Fabrication import RegionVertex
 from Misc import FixedSide, FixedSides
 
 
-def get_ordered_outline(verts: list[RegionVertex]):
-    ord_verts = []
+def get_ordered_outline(vertices: list[RegionVertex]):
+    ordered_vertices = []
 
     # Start ordered vertices with the first item (simultaneously remove from main list)
-    ord_verts.append(verts[0])
-    verts.remove(verts[0])
+    ordered_vertices.append(vertices[0])
+    vertices.remove(vertices[0])
 
-    browse_num = len(verts)
+    browse_num = len(vertices)
     for i in range(browse_num):
         found_next = False
         #try all directions to look for next vertex
         for vax in range(2):
-            for vdir in range(-1,2,2):
+            for vdir in range(-1, 2, 2):
                 # check if there is an available vertex
-                next_ind = ord_verts[-1].ind.copy()
+                next_ind = ordered_vertices[-1].ind.copy()
                 next_ind[vax]+=vdir
                 next_rv = None
-                for rv in verts:
+                for rv in vertices:
                     if rv.ind==next_ind:
-                        if len(ord_verts)>1 and rv.ind==ord_verts[-2].ind: break # prevent going back
+                        if len(ordered_vertices)>1 and rv.ind==ordered_vertices[-2].ind: break # prevent going back
                         # check so that it is not crossing a blocked region etc
                         # 1) from point of view of previous point
-                        p_neig = ord_verts[-1].neighbors
+                        p_neig = ordered_vertices[-1].neighbors
                         vaxval = int(0.5*(vdir+1))
                         nind0 = [0,0]
                         nind0[vax] = vaxval
@@ -48,13 +48,13 @@ def get_ordered_outline(verts: list[RegionVertex]):
                         if int(0.5*(ne0+1))==int(0.5*(ne1+1)): continue # trying to cross blocked material
                         # If you made it here, you found the next vertex!
                         found_next=True
-                        ord_verts.append(rv)
-                        verts.remove(rv)
+                        ordered_vertices.append(rv)
+                        vertices.remove(rv)
                         break
                 if found_next: break
             if found_next: break
         if found_next: continue
-    return ord_verts
+    return ordered_vertices
 
 def get_friction_and_contact_areas(mat,slides,fixed_sides, n) -> tuple[int, list, int, list]:
     friction = -1

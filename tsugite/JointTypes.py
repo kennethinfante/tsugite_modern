@@ -9,15 +9,27 @@ import random
 from Buffer import Buffer
 from Evaluation import Evaluation
 from Fabrication import *
-from Geometries import Geometries
-from Geometries import get_index
+from Geometries import Geometries, get_index
 from Misc import FixedSides
 
 from TypingHelper import *
 
 class JointType:
-    def __init__(self, parent, fs=[], sax=2, dim=3, ang=0.0, td=[44.0, 44.0, 44.0], fspe=400, fspi=6000, fabtol=0.15,
-                 fabdia=6.00, align_ax=0, fabext="gcode", incremental=False, hfs=[], finterp=True):
+    def __init__(self, parent,
+                 fs=[],
+                 sax=2,
+                 dim=3,
+                 ang=0.0,
+                 td=[44.0, 44.0, 44.0],
+                 fspe=400,
+                 fspi=6000,
+                 fabtol=0.15,
+                 fabdia=6.00,
+                 align_ax=0,
+                 fabext="gcode",
+                 incremental=False,
+                 hfs=[],
+                 finterp=True):
         self.parent = parent
         self.sax = sax
         self.fixed = FixedSides(self)
@@ -29,8 +41,8 @@ class JointType:
         self.component_length = 0.5 * self.component_size
         self.ratio = np.average(self.real_tim_dims) / self.component_size
         self.voxel_sizes = np.copy(self.real_tim_dims) / (self.ratio * self.dim)
-        self.fab = Fabrication(self, tol=fabtol, dia=fabdia, ext=fabext, align_ax=align_ax, interp=finterp, spi=fspi,
-                               spe=fspe)
+        self.fab = Fabrication(self, tolerances=fabtol, bit_diameter=fabdia, fab_ext=fabext, align_ax=align_ax, arc_interp=finterp, spindle_speed=fspi,
+                               milling_speed=fspe)
         self.vertex_no_info = 8
         self.ang = ang
         self.buff = Buffer(self)  # initiating the buffer
@@ -206,9 +218,9 @@ class JointType:
         for i in inds: self.real_tim_dims[i] = val
         self.ratio = np.average(self.real_tim_dims) / self.component_size
         self.voxel_sizes = np.copy(self.real_tim_dims) / (self.ratio * self.dim)
-        self.fab.vdia = self.fab.dia / self.ratio
-        self.fab.vrad = self.fab.rad / self.ratio
-        self.fab.vtol = self.fab.tol / self.ratio
+        self.fab.vdia = self.fab.diameter / self.ratio
+        self.fab.vrad = self.fab.radius / self.ratio
+        self.fab.vtol = self.fab.tolerances / self.ratio
         self.create_and_buffer_vertices(milling_path)
 
     def update_number_of_components(self, new_noc):
@@ -252,19 +264,19 @@ class JointType:
         self.real_tim_dims = np.array(td)
         self.ratio = np.average(self.real_tim_dims) / self.component_size
         self.voxel_sizes = np.copy(self.real_tim_dims) / (self.ratio * self.dim)
-        self.fab.tol = fabtol
+        self.fab.tolerances = fabtol
         self.fab.real_dia = fabdia
-        self.fab.rad = 0.5 * self.fab.real_dia - self.fab.tol
-        self.fab.dia = 2 * self.fab.rad
-        self.fab.vdia = self.fab.dia / self.ratio
-        self.fab.vrad = self.fab.rad / self.ratio
-        self.fab.vtol = self.fab.tol / self.ratio
-        self.fab.speed = fspe
-        self.fab.spindlespeed = fspi
+        self.fab.radius = 0.5 * self.fab.real_dia - self.fab.tolerances
+        self.fab.diameter = 2 * self.fab.radius
+        self.fab.vdia = self.fab.diameter / self.ratio
+        self.fab.vrad = self.fab.radius / self.ratio
+        self.fab.vtol = self.fab.tolerances / self.ratio
+        self.fab.milling_speed = fspe
+        self.fab.spindle_speed = fspi
         self.fab.extra_rot_deg = fabrot
-        self.fab.ext = fabext
+        self.fab.fab_ext = fabext
         self.fab.align_ax = align_ax
-        self.fab.interp = finterp
+        self.fab.arc_interp = finterp
         self.incremental = incremental
         self.mesh = Geometries(self, hfs=hfs)
         self.fixed.update_unblocked()
@@ -317,8 +329,8 @@ class JointType:
         TDZ: timber timension in z-axis (mm) (TDX, TDY, and TDZ does not have to be equal. Refer for Figure 27b of the paper)
         DIA: diameter of the milling bit
         TOL: tolerance
-        SPE: speed of the milling bit
-        SPI: spindle speed
+        SPE: milling_speed of the milling bit
+        SPI: spindle milling_speed
         INC: incremental            (T/F)   Option for the layering of the milling path to avoid "downcuts"
         FIN: interpolation of arcs  (T/F)   Milling path true arcs or divided into many points (depending on milling machine)
         ALN: align                          Axis to align the timber element with during fabrication
@@ -339,13 +351,13 @@ class JointType:
         file.write("TDY " + str(self.real_tim_dims[1]) + "\n")
         file.write("TDZ " + str(self.real_tim_dims[2]) + "\n")
         file.write("DIA " + str(self.fab.real_dia) + "\n")
-        file.write("TOL " + str(self.fab.tol) + "\n")
-        file.write("SPE " + str(self.fab.speed) + "\n")
-        file.write("SPI " + str(self.fab.spindlespeed) + "\n")
+        file.write("TOL " + str(self.fab.tolerances) + "\n")
+        file.write("SPE " + str(self.fab.milling_speed) + "\n")
+        file.write("SPI " + str(self.fab.spindle_speed) + "\n")
         file.write("INC " + str(self.incremental) + "\n")
-        file.write("FIN " + str(self.fab.interp) + "\n")
+        file.write("FIN " + str(self.fab.arc_interp) + "\n")
         file.write("ALN " + str(self.fab.align_ax) + "\n")
-        file.write("EXT " + self.fab.ext + "\n")
+        file.write("EXT " + self.fab.fab_ext + "\n")
 
         # Fixed sides
         file.write("FSS ")
@@ -382,14 +394,14 @@ class JointType:
         ang = self.ang
         dx, dy, dz = self.real_tim_dims
         dia = self.fab.real_dia
-        tol = self.fab.tol
-        spe = self.fab.speed
-        spi = self.fab.spindlespeed
+        tol = self.fab.tolerances
+        spe = self.fab.milling_speed
+        spi = self.fab.spindle_speed
         inc = self.incremental
         aln = self.fab.align_ax
-        ext = self.fab.ext
+        ext = self.fab.fab_ext
         fs = self.fixed.sides
-        fin = self.fab.interp
+        fin = self.fab.arc_interp
 
         # Read
         hfs = []
@@ -672,7 +684,7 @@ def rough_milling_path(type, rough_pixs, lay_num, n):
 
     # Define fabrication parameters
 
-    no_lanes = 2 + math.ceil(((type.real_tim_dims[axes[1]] / type.dim) - 2 * type.fab.dia) / type.fab.dia)
+    no_lanes = 2 + math.ceil(((type.real_tim_dims[axes[1]] / type.dim) - 2 * type.fab.diameter) / type.fab.diameter)
     lane_width = (type.voxel_sizes[axes[1]] - type.fab.vdia) / (no_lanes - 1)
     ratio = np.linalg.norm(type.pos_vecs[axes[1]]) / type.voxel_sizes[axes[1]]
     v_vrad = type.fab.vrad * ratio
@@ -764,7 +776,7 @@ def edge_milling_path(type, lay_num, n):
 
     if len(type.fixed.sides[n]) == 1 and type.fixed.sides[n][0].ax != type.sax:
 
-        # ax dir of current fixed side
+        # ax direction of current fixed side
         ax = type.fixed.sides[n][0].ax
         dir = type.fixed.sides[n][0].dir
         # oax - axis perp. to component axis
@@ -1279,7 +1291,7 @@ def milling_path_vertices(type, n):
     if np.min(type.voxel_sizes) < type.fab.vdia: print("Could not generate milling path. The milling bit is too large.")
 
     # Calculate depth constants
-    no_z = int(type.ratio * type.voxel_sizes[type.sax] / type.fab.dep)
+    no_z = int(type.ratio * type.voxel_sizes[type.sax] / type.fab.depth)
     dep = type.voxel_sizes[type.sax] / no_z
 
     # Defines axes and vectors

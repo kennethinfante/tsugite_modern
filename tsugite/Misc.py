@@ -1,21 +1,23 @@
 import numpy as np
 import random
 
-from typing import Optional
+from TypingHelper import *
 
 
-def depth(l: list) -> int:
-    if isinstance(l, list):
-        return 1 + max(depth(item) for item in l)
+def depth(sides: list) -> int:
+    if isinstance(sides, list):
+        return 1 + max(depth(side) for side in sides)
     else:
         return 0
 
 
+# is ax sames as axis?
 class FixedSide:
-    def __init__(self, ax: int, dir: int) -> None:
+    def __init__(self, ax: int, direction: Direction) -> None:
         self.ax = ax
-        self.dir = dir
+        self.dir = direction
 
+    # what really is other_sides
     def is_unique(self, other_sides: list) -> bool:
         unique = True
         if depth(other_sides) == 1:
@@ -32,7 +34,7 @@ class FixedSide:
         return unique
 
 class FixedSides:
-    def __init__(self, parent, # from analysis, parent is JointType class
+    def __init__(self, parent,                                      # from analysis, parent is JointType class
                  side_str: Optional[str] = None,
                  fs: Optional[list[FixedSide]] = None) -> None:
 

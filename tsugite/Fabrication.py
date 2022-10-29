@@ -17,17 +17,17 @@ class MillVertex:
         self.z = pt[2]
         self.is_arc = is_arc
         self.arc_ctr = np.array(arc_ctr)
-        self.is_tra = is_tra  # is traversing, gcode_mode G0 (max speed) (otherwise G1)
+        self.is_tra = is_tra  # is traversing, gcode_mode G0 (max milling_speed) (otherwise G1)
 
-    def scale_and_swap(self, ax, dir, ratio, real_tim_dims, coords: list[int], d: int) -> None:
+    def scale_and_swap(self, ax, direction: Direction, ratio, real_tim_dims, coords: list[int], d: int) -> None:
         # sawp
         xyz = [ratio * self.x, ratio * self.y, ratio * self.z]
         if ax == 2: xyz[1] = -xyz[1]
         xyz = xyz[coords[0]], xyz[coords[1]], xyz[coords[2]]
         self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
         # move z down, flip if component b
-        self.z = -(2 * dir - 1) * self.z - 0.5 * real_tim_dims[ax]
-        self.y = -(2 * dir - 1) * self.y
+        self.z = -(2 * direction - 1) * self.z - 0.5 * real_tim_dims[ax]
+        self.y = -(2 * direction - 1) * self.y
         self.pt = np.array([self.x, self.y, self.z])
         self.pos = np.array([self.x, self.y, self.z], dtype=np.float64)
         self.xstr = str(round(self.x, d))
@@ -39,8 +39,8 @@ class MillVertex:
                             ratio * self.arc_ctr[2]]  # ratio*self.arc_ctr
             if ax == 2: self.arc_ctr[1] = -self.arc_ctr[1]
             self.arc_ctr = [self.arc_ctr[coords[0]], self.arc_ctr[coords[1]], self.arc_ctr[coords[2]]]
-            self.arc_ctr[2] = -(2 * dir - 1) * self.arc_ctr[2] - 0.5 * real_tim_dims[ax]
-            self.arc_ctr[1] = -(2 * dir - 1) * self.arc_ctr[1]
+            self.arc_ctr[2] = -(2 * direction - 1) * self.arc_ctr[2] - 0.5 * real_tim_dims[ax]
+            self.arc_ctr[1] = -(2 * direction - 1) * self.arc_ctr[1]
             self.arc_ctr = np.array(self.arc_ctr)
 
     def rotate(self, ang: ArrayLike, d: int) -> None:
@@ -168,28 +168,30 @@ class RoughPixel:
 
 
 class Fabrication:
-    def __init__(self, parent,
-                 tol: float = 0.15,
-                 dia: float = 6.00,
-                 ext: str = "gcode",
+    def __init__(self, parent,  # from Analysis, parent is JointType
+                 tolerances: float = 0.15,
+                 bit_diameter: float = 6.00,
+                 fab_ext: FabricationExt = "gcode",
                  align_ax: int = 0,
-                 interp: bool = True,
-                 spe: int = 400,
-                 spi: int = 6000) -> None:
+                 arc_interp: bool = True,
+                 milling_speed: int = 400,
+                 spindle_speed: int = 6000) -> None:
         self.parent = parent
-        self.real_dia = dia  # milling bit radius in mm
-        self.tol = tol  # 0.10 #tolerance in mm
-        self.rad = 0.5 * self.real_dia - self.tol
-        self.dia = 2 * self.rad
-        self.vdia = self.dia / self.parent.ratio
-        self.vrad = self.rad / self.parent.ratio
-        self.vtol = self.tol / self.parent.ratio
-        self.dep = 1.5  # milling depth in mm
+        self.real_dia = bit_diameter  # milling bit radius in mm
+        self.tolerances = tolerances  # 0.10 #tolerance in mm
+        self.radius = 0.5 * self.real_dia - self.tolerances
+        self.diameter = 2 * self.radius
+        # does v means voxel, vector, vertical
+        self.vdia = self.diameter / self.parent.ratio
+        self.vrad = self.radius / self.parent.ratio
+        self.vtol = self.tolerances / self.parent.ratio
+
+        self.depth = 1.5  # milling depth in mm
         self.align_ax = align_ax
-        self.ext = ext
-        self.interp = interp
-        self.speed = spe
-        self.spindlespeed = spi
+        self.fab_ext = fab_ext
+        self.arc_interp = arc_interp
+        self.milling_speed = milling_speed
+        self.spindle_speed = spindle_speed
 
     def export_gcode(self, filename_tsu: FilePath = os.getcwd() + os.sep + "joint.tsu") -> None:
         # make sure that the z axis of the gcode is facing up
@@ -214,29 +216,29 @@ class Fabrication:
             rot_ang = angle_between(aax, comp_vec, normal_vector=zax)
             if fdir == 0: rot_ang = -rot_ang
             #
-            file_name = filename_tsu[:-4] + "_" + names[n] + "." + self.ext
+            file_name = filename_tsu[:-4] + "_" + names[n] + "." + self.fab_ext
             file = open(file_name, "w")
-            if self.ext == "gcode" or self.ext == "nc":
+            if self.fab_ext == "gcode" or self.fab_ext == "nc":
                 ###initialization .goce and .nc
                 file.write("%\n")
                 file.write("G90 (Absolute [G91 is incremental])\n")
                 file.write("G17 (set XY plane for circle path)\n")
                 file.write("G94 (set unit/minute)\n")
                 file.write("G21 (set unit[mm])\n")
-                spistr = str(int(self.spindlespeed))
+                spistr = str(int(self.spindle_speed))
                 file.write("S" + spistr + " (Spindle " + spistr + "rpm)\n")
                 file.write("M3 (spindle start)\n")
                 file.write("G54\n")
-                spestr = str(int(self.speed))
+                spestr = str(int(self.milling_speed))
                 file.write("F" + spestr + " (Feed " + spestr + "mm/min)\n")
-            elif self.ext == "sbp":
+            elif self.fab_ext == "sbp":
                 file.write("'%\n")
                 file.write("SA\n")
                 file.write("MS,6.67,6.67\n\n")
                 file.write("TR 6000\n\n")
                 file.write("SO 1,1\n")
             else:
-                print("Unknown extension:", self.ext)
+                print("Unknown extension:", self.fab_ext)
 
             ###content
             for i, mv in enumerate(self.parent.gcodeverts[n]):
@@ -258,16 +260,16 @@ class Fabrication:
                     if diff_ang > 0.5 * math.pi: clockwise = True
 
                 # write to file
-                if self.ext == "gcode" or self.ext == "nc":
-                    if arc and self.interp:
+                if self.fab_ext == "gcode" or self.fab_ext == "nc":
+                    if arc and self.arc_interp:
                         if clockwise:
                             file.write("G2")
                         else:
                             file.write("G3")
-                        file.write(" R" + str(round(self.dia, d)) + " X" + mv.xstr + " Y" + mv.ystr)
+                        file.write(" R" + str(round(self.diameter, d)) + " X" + mv.xstr + " Y" + mv.ystr)
                         if mv.z != pmv.z: file.write(" Z" + mv.zstr)
                         file.write("\n")
-                    elif arc and not self.interp:
+                    elif arc and not self.arc_interp:
                         pts = arc_points(pmv.pt, mv.pt, pmv.arc_ctr, mv.arc_ctr, 2, math.radians(1))
                         for pt in pts:
                             file.write("G1")
@@ -283,9 +285,9 @@ class Fabrication:
                         if i == 0 or mv.y != pmv.y: file.write(" Y" + mv.ystr)
                         if i == 0 or mv.z != pmv.z: file.write(" Z" + mv.zstr)
                         file.write("\n")
-                elif self.ext == "sbp":
+                elif self.fab_ext == "sbp":
                     if arc and mv.z == pmv.z:
-                        file.write("CG," + str(round(2 * self.dia, d)) + "," + mv.xstr + "," + mv.ystr + ",,,T,")
+                        file.write("CG," + str(round(2 * self.diameter, d)) + "," + mv.xstr + "," + mv.ystr + ",,,T,")
                         if clockwise:
                             file.write("1\n")
                         else:
@@ -313,12 +315,12 @@ class Fabrication:
                         else:
                             file.write(" \n")
             # end
-            if self.ext == "gcode" or self.ext == "nc":
+            if self.fab_ext == "gcode" or self.fab_ext == "nc":
                 file.write("M5 (Spindle stop)\n")
                 file.write("M2 (end of program)\n")
                 file.write("M30 (delete sd file)\n")
                 file.write("%\n")
-            elif self.ext == "sbp":
+            elif self.fab_ext == "sbp":
                 file.write("SO 1,0\n")
                 file.write("END\n")
                 file.write("'%\n")
