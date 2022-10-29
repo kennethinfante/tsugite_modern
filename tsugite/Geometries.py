@@ -15,6 +15,226 @@ import os
 from Misc import FixedSide
 
 
+# noinspection PyAttributeOutsideInit
+class Geometries:
+    def __init__(self, parent, main_mesh=True, hfs=[]):
+        self.main_mesh = main_mesh
+        self.parent = parent
+        self.fab_directions = [0, 1]  # Initiate list of fabrication directions
+        for i in range(1, self.parent.noc - 1): self.fab_directions.insert(1, 1)
+        if len(hfs) == 0:
+            self.height_fields = get_random_height_fields(self.parent.dim,
+                                                          self.parent.noc)  # Initiate a random joint geometry
+        else:
+            self.height_fields = hfs
+        if self.main_mesh: self.select = Selection(self)
+        self.voxel_matrix_from_height_fields(first=True)
+
+    def voxel_matrix_from_height_fields(self, first=False):
+        vox_mat = mat_from_fields(self.height_fields, self.parent.sax)
+        self.voxel_matrix = vox_mat
+        if self.main_mesh:
+            self.eval = Evaluation(self.voxel_matrix, self.parent)
+            self.fab_directions = self.eval.fab_directions
+        if self.main_mesh and not first:
+            self.parent.update_suggestions()
+
+    def create_indices(self, glo_off=0, milling_path=False):
+        # shared lists
+        all_inds = []
+        self.indices_fall = []
+        self.indices_lns = []
+        # suggestion geometries
+        if not self.main_mesh:  # for suggestions and gallery - just show basic geometry - no feedback - global offset necessary
+            for n in range(self.parent.noc):
+                ax = self.parent.fixed.sides[n][0].ax
+                nend, end, all, all_inds = joint_face_indices(self, all_inds,
+                                                              self.voxel_matrix, self.parent.fixed.sides[n], n,
+                                                              ax * self.parent.vn, global_offset=glo_off)
+                lns, all_inds = joint_line_indices(self, all_inds, n, ax * self.parent.vn, global_offset=glo_off)
+                self.indices_fall.append(all)
+                self.indices_lns.append(lns)
+        # current geometry (main including feedback)
+        else:
+            self.indices_fend = []
+            self.indices_not_fend = []
+            self.indices_fcon = []
+            self.indices_not_fcon = []
+            self.indices_fbrk = []
+            self.indices_not_fbrk = []
+            self.indices_open_lines = []
+            self.indices_not_fbridge = []
+            self.indices_ffric = []
+            self.indices_not_ffric = []
+            self.indices_fcont = []
+            self.indices_not_fcont = []
+            self.indices_arrows = []
+            self.indices_fpick_top = []
+            self.indices_fpick_not_top = []
+            self.outline_selected_faces = None
+            self.outline_selected_component = None
+            self.indices_chess_lines = []
+            self.indices_breakable_lines = []
+            self.indices_milling_path = []
+            for n in range(self.parent.noc):
+                ax = self.parent.fixed.sides[n][0].ax
+                # Faces
+                nend, end, con, all_inds = joint_face_indices(self, all_inds,
+                                                              self.eval.voxel_matrix_connected,
+                                                              self.parent.fixed.sides[n], n, ax * self.parent.vn)
+                if not self.eval.connected[n]:
+                    fne, fe, uncon, all_inds = joint_face_indices(self, all_inds, self.eval.voxel_matrix_unconnected,
+                                                                  [], n, ax * self.parent.vn)
+                    self.indices_not_fcon.append(uncon)
+                    all = ElementProperties(GL_QUADS, con.count + uncon.count, con.start_index, n)
+                else:
+                    self.indices_not_fcon.append(None)
+                    all = con
+
+                # breakable and not breakable faces
+                fne, fe, brk_faces, all_inds = joint_face_indices(self, all_inds, self.eval.breakable_voxmat, [], n,
+                                                                  ax * self.parent.vn)
+                fne, fe, not_brk_faces, all_inds = joint_face_indices(self, all_inds, self.eval.non_breakable_voxmat,
+                                                                      self.parent.fixed.sides[n], n, n * self.parent.vn)
+
+                if not self.eval.bridged[n]:
+                    unbris = []
+                    for m in range(2):
+                        fne, fe, unbri, all_inds = joint_face_indices(self, all_inds,
+                                                                      self.eval.voxel_matrices_unbridged[n][m],
+                                                                      [self.parent.fixed.sides[n][m]], n,
+                                                                      n * self.parent.vn)
+                        unbris.append(unbri)
+                else:
+                    unbris = None
+
+                # Friction ad contact faces
+                fric, nfric, all_inds = joint_area_face_indices(self, all_inds, self.voxel_matrix,
+                                                                self.eval.friction_faces[n], n)
+                cont, ncont, all_inds = joint_area_face_indices(self, all_inds, self.voxel_matrix,
+                                                                self.eval.contact_faces[n], n)
+
+                # picking faces
+                faces_pick_not_tops, faces_pick_tops, all_inds = joint_top_face_indices(self, all_inds, n,
+                                                                                        self.parent.noc,
+                                                                                        ax * self.parent.vn)
+
+                # Lines
+                lns, all_inds = joint_line_indices(self, all_inds, n, ax * self.parent.vn)
+
+                # Chessboard feedback lines
+                if self.eval.checker[n]:
+                    chess, all_inds = chess_line_indices(self, all_inds, self.eval.checker_vertices[n], n,
+                                                         ax * self.parent.vn)
+                else:
+                    chess = []
+                # Breakable lines
+                if self.eval.breakable:
+                    break_lns, all_inds = break_line_indices(self, all_inds, self.eval.breakable_outline_inds[n], n,
+                                                             ax * self.parent.vn)
+
+                # Opening lines
+                open_indices, all_inds = open_line_indices(self, all_inds, n, ax * self.parent.vn)
+                self.indices_open_lines.append(open_indices)
+
+                # arrows
+                larr, farr, all_inds = arrow_indices(self, all_inds, self.eval.slides[n], n, 3 * self.parent.vn)
+                arrows = [larr, farr]
+
+                if milling_path and len(self.parent.mverts[0]) > 0:
+                    mill, all_inds = milling_path_indices(self, all_inds, int(len(self.parent.mverts[n]) / 8),
+                                                          self.parent.m_start[n], n)
+
+                # Append lists
+                self.indices_fend.append(end)
+                self.indices_not_fend.append(nend)
+                self.indices_fcon.append(con)
+                self.indices_fall.append(all)
+                self.indices_lns.append(lns)
+                self.indices_not_fbridge.append(unbris)
+                self.indices_arrows.append(arrows)
+                self.indices_fpick_top.append(faces_pick_tops)
+                self.indices_fpick_not_top.append(faces_pick_not_tops)
+                self.indices_chess_lines.append(chess)
+
+                if self.eval.breakable:
+                    self.indices_breakable_lines.append(break_lns)
+                    self.indices_fbrk.append(brk_faces)
+                    self.indices_not_fbrk.append(not_brk_faces)
+
+                if milling_path and len(self.parent.mverts[0]) > 0:
+                    self.indices_milling_path.append(mill)
+                self.indices_ffric.append(fric)
+                self.indices_not_ffric.append(nfric)
+                self.indices_fcont.append(cont)
+                self.indices_not_fcont.append(ncont)
+
+            # outline of selected faces
+            if self.select.state == 2:
+                self.outline_selected_faces, all_inds = joint_selected_top_line_indices(self, self.select, all_inds)
+
+            if self.select.n is not None and self.select.new_fixed_sides_for_display is not None:
+                self.outline_selected_component, all_inds = component_outline_indices(self, all_inds,
+                                                                                      self.select.new_fixed_sides_for_display,
+                                                                                      self.select.n,
+                                                                                      self.select.n * self.parent.vn)
+        self.indices = all_inds
+
+    def randomize_height_fields(self):
+        self.height_fields = get_random_height_fields(self.parent.dim, self.parent.noc)
+        self.voxel_matrix_from_height_fields()
+        self.parent.combine_and_buffer_indices()
+
+    def clear_height_fields(self):
+        self.height_fields = []
+        for n in range(self.parent.noc - 1):
+            hf = np.zeros((self.parent.dim, self.parent.dim))
+            self.height_fields.append(hf)
+        self.voxel_matrix_from_height_fields()
+        self.parent.combine_and_buffer_indices()
+
+    def load_search_results(self, index=-1):
+        # Folder
+        location = os.path.abspath(os.getcwd())
+        location = location.split(os.sep)
+        location.pop()
+        location = os.sep.join(location)
+        location += os.sep + "search_results" + os.sep + "noc_" + str(self.parent.noc) + os.sep + "dim_" + str(
+            self.parent.dim) + os.sep + "fs_"
+        for i in range(len(self.parent.fixed.sides)):
+            for fs in self.parent.fixed.sides[i]:
+                location += str(fs[0]) + str(fs[1])
+            if i != len(self.parent.fixed.sides) - 1: location += "_"
+        location += os.sep + "allvalid"
+        print("Trying to load geometry from", location)
+        maxi = len(os.listdir(location)) - 1
+        if index == -1: index = random.randint(0, maxi)
+        self.height_fields = np.load(location + os.sep + "height_fields_" + str(index) + ".npy")
+        self.fab_directions = []
+        for i in range(self.parent.noc):
+            if i == 0:
+                self.fab_directions.append(0)
+            else:
+                self.fab_directions.append(1)
+        self.voxel_matrix_from_height_fields()
+        self.parent.combine_and_buffer_indices()
+
+    def edit_height_fields(self, faces, h, n, dir):
+        for ind in faces:
+            self.height_fields[n - dir][tuple(ind)] = h
+            if dir == 0:  # If editing top
+                # If new height is higher than following hf, update to same height
+                for i in range(n - dir + 1, self.parent.noc - 1):
+                    h2 = self.height_fields[i][tuple(ind)]
+                    if h > h2: self.height_fields[i][tuple(ind)] = h
+            if dir == 1:  # If editing bottom
+                # If new height is lower than previous hf, update to same height
+                for i in range(0, n - dir):
+                    h2 = self.height_fields[i][tuple(ind)]
+                    if h < h2: self.height_fields[i][tuple(ind)] = h
+        self.voxel_matrix_from_height_fields()
+        self.parent.combine_and_buffer_indices()
+
 # Supporting functions
 def get_random_height_fields(dim, noc):
     hfs = []
@@ -94,7 +314,7 @@ def joint_face_indices(self, all_indices, mat, fixed_sides, n, offset, global_of
                 indices.extend([a0, b0, b1, a1])  # side face 1
                 indices.extend([b0, d0, d1, b1])  # side face 2
                 indices.extend([d0, c0, c1, d1])  # side face 3
-                indices.extend([c0, a0, a1, c1])  ##side face 4
+                indices.extend([c0, a0, a1, c1])  # side face 4
     # Format
     indices = np.array(indices, dtype=np.uint32)
     indices = indices + offset
@@ -156,7 +376,7 @@ def joint_area_face_indices(self, all_indices, mat, area_faces, n):
             indices_ends.extend([a0 + offset, b0 + offset, b1 + offset, a1 + offset])  # side face 1
             indices_ends.extend([b0 + offset, d0 + offset, d1 + offset, b1 + offset])  # side face 2
             indices_ends.extend([d0 + offset, c0 + offset, c1 + offset, d1 + offset])  # side face 3
-            indices_ends.extend([c0 + offset, a0 + offset, a1 + offset, c1 + offset])  ##side face 4
+            indices_ends.extend([c0 + offset, a0 + offset, a1 + offset, c1 + offset])  # side face 4
     # Format
     indices = np.array(indices, dtype=np.uint32)
     # indices = indices + offset
@@ -320,28 +540,33 @@ def break_line_indices(self, all_indices, break_inds, n, offset):
 
 def open_line_indices(self, all_indices, n, offset):
     indices = []
-    dirs = [0, 1]
+    directions = [0, 1]
     if n == 0:
-        dirs = [0]
+        directions = [0]
     elif n == self.parent.noc - 1:
-        dirs = [1]
+        directions = [1]
     d = self.parent.dim + 1
     start = d * d * d
-    for dir in dirs:
-        a1, b1, c1, d1 = get_corner_indices(self.parent.sax, dir, self.parent.dim)
-        off = 24 * self.parent.sax + 12 * (1 - dir)
+
+    for direction in directions:
+        a1, b1, c1, d1 = get_corner_indices(self.parent.sax, direction, self.parent.dim)
+        off = 24 * self.parent.sax + 12 * (1 - direction)
         a0, b0, c0, d0 = start + off, start + off + 1, start + off + 2, start + off + 3
         indices.extend([a0, a1, b0, b1, c0, c1, d0, d1])
+
     # Format
     indices = np.array(indices, dtype=np.uint32)
     indices = indices + offset
+
     # Store
     indices_prop = ElementProperties(GL_LINES, len(indices), len(all_indices), n)
     all_indices = np.concatenate([all_indices, indices])
+
     # Return
     return indices_prop, all_indices
 
 
+# can this be part of Geometries class?
 def arrow_indices(self, all_indices, slide_dirs, n, offset):
     line_indices = []
     face_indices = []
@@ -627,219 +852,4 @@ def milling_path_indices(self, all_indices, count, start, n):
     return indices_prop, all_indices
 
 
-class Geometries:
-    def __init__(self, parent, mainmesh=True, hfs=[]):
-        self.mainmesh = mainmesh
-        self.parent = parent
-        self.fab_directions = [0, 1]  # Initiate list of fabrication directions
-        for i in range(1, self.parent.noc - 1): self.fab_directions.insert(1, 1)
-        if len(hfs) == 0:
-            self.height_fields = get_random_height_fields(self.parent.dim,
-                                                          self.parent.noc)  # Initiate a random joint geometry
-        else:
-            self.height_fields = hfs
-        if self.mainmesh: self.select = Selection(self)
-        self.voxel_matrix_from_height_fields(first=True)
 
-    def voxel_matrix_from_height_fields(self, first=False):
-        vox_mat = mat_from_fields(self.height_fields, self.parent.sax)
-        self.voxel_matrix = vox_mat
-        if self.mainmesh:
-            self.eval = Evaluation(self.voxel_matrix, self.parent)
-            self.fab_directions = self.eval.fab_directions
-        if self.mainmesh and not first:
-            self.parent.update_suggestions()
-
-    def create_indices(self, glo_off=0, milling_path=False):
-        # shared lists
-        all_inds = []
-        self.indices_fall = []
-        self.indices_lns = []
-        # suggestion geometries
-        if not self.mainmesh:  # for suggestions and gallery - just show basic geometry - no feedback - global offset necessary
-            for n in range(self.parent.noc):
-                ax = self.parent.fixed.sides[n][0].ax
-                nend, end, all, all_inds = joint_face_indices(self, all_inds,
-                                                              self.voxel_matrix, self.parent.fixed.sides[n], n,
-                                                              ax * self.parent.vn, global_offset=glo_off)
-                lns, all_inds = joint_line_indices(self, all_inds, n, ax * self.parent.vn, global_offset=glo_off)
-                self.indices_fall.append(all)
-                self.indices_lns.append(lns)
-        # current geometry (main including feedback)
-        else:
-            self.indices_fend = []
-            self.indices_not_fend = []
-            self.indices_fcon = []
-            self.indices_not_fcon = []
-            self.indices_fbrk = []
-            self.indices_not_fbrk = []
-            self.indices_open_lines = []
-            self.indices_not_fbridge = []
-            self.indices_ffric = []
-            self.indices_not_ffric = []
-            self.indices_fcont = []
-            self.indices_not_fcont = []
-            self.indices_arrows = []
-            self.indices_fpick_top = []
-            self.indices_fpick_not_top = []
-            self.outline_selected_faces = None
-            self.outline_selected_component = None
-            self.indices_chess_lines = []
-            self.indices_breakable_lines = []
-            self.indices_milling_path = []
-            for n in range(self.parent.noc):
-                ax = self.parent.fixed.sides[n][0].ax
-                # Faces
-                nend, end, con, all_inds = joint_face_indices(self, all_inds,
-                                                              self.eval.voxel_matrix_connected,
-                                                              self.parent.fixed.sides[n], n, ax * self.parent.vn)
-                if not self.eval.connected[n]:
-                    fne, fe, uncon, all_inds = joint_face_indices(self, all_inds, self.eval.voxel_matrix_unconnected,
-                                                                  [], n, ax * self.parent.vn)
-                    self.indices_not_fcon.append(uncon)
-                    all = ElementProperties(GL_QUADS, con.count + uncon.count, con.start_index, n)
-                else:
-                    self.indices_not_fcon.append(None)
-                    all = con
-
-                # breakable and not breakable faces
-                fne, fe, brk_faces, all_inds = joint_face_indices(self, all_inds, self.eval.breakable_voxmat, [], n,
-                                                                  ax * self.parent.vn)
-                fne, fe, not_brk_faces, all_inds = joint_face_indices(self, all_inds, self.eval.non_breakable_voxmat,
-                                                                      self.parent.fixed.sides[n], n, n * self.parent.vn)
-
-                if not self.eval.bridged[n]:
-                    unbris = []
-                    for m in range(2):
-                        fne, fe, unbri, all_inds = joint_face_indices(self, all_inds,
-                                                                      self.eval.voxel_matrices_unbridged[n][m],
-                                                                      [self.parent.fixed.sides[n][m]], n,
-                                                                      n * self.parent.vn)
-                        unbris.append(unbri)
-                else:
-                    unbris = None
-
-                # Friction ad contact faces
-                fric, nfric, all_inds = joint_area_face_indices(self, all_inds, self.voxel_matrix,
-                                                                self.eval.friction_faces[n], n)
-                cont, ncont, all_inds = joint_area_face_indices(self, all_inds, self.voxel_matrix,
-                                                                self.eval.contact_faces[n], n)
-
-                # picking faces
-                faces_pick_not_tops, faces_pick_tops, all_inds = joint_top_face_indices(self, all_inds, n,
-                                                                                        self.parent.noc,
-                                                                                        ax * self.parent.vn)
-
-                # Lines
-                lns, all_inds = joint_line_indices(self, all_inds, n, ax * self.parent.vn)
-
-                # Chessboard feedback lines
-                if self.eval.checker[n]:
-                    chess, all_inds = chess_line_indices(self, all_inds, self.eval.checker_vertices[n], n,
-                                                         ax * self.parent.vn)
-                else:
-                    chess = []
-                # Breakable lines
-                if self.eval.breakable:
-                    break_lns, all_inds = break_line_indices(self, all_inds, self.eval.breakable_outline_inds[n], n,
-                                                             ax * self.parent.vn)
-
-                # Opening lines
-                open, all_inds = open_line_indices(self, all_inds, n, ax * self.parent.vn)
-                self.indices_open_lines.append(open)
-
-                # arrows
-                larr, farr, all_inds = arrow_indices(self, all_inds, self.eval.slides[n], n, 3 * self.parent.vn)
-                arrows = [larr, farr]
-
-                if milling_path and len(self.parent.mverts[0]) > 0:
-                    mill, all_inds = milling_path_indices(self, all_inds, int(len(self.parent.mverts[n]) / 8),
-                                                          self.parent.m_start[n], n)
-
-                # Append lists
-                self.indices_fend.append(end)
-                self.indices_not_fend.append(nend)
-                self.indices_fcon.append(con)
-                self.indices_fall.append(all)
-                self.indices_lns.append(lns)
-                self.indices_not_fbridge.append(unbris)
-                self.indices_arrows.append(arrows)
-                self.indices_fpick_top.append(faces_pick_tops)
-                self.indices_fpick_not_top.append(faces_pick_not_tops)
-                self.indices_chess_lines.append(chess)
-                if self.eval.breakable:
-                    self.indices_breakable_lines.append(break_lns)
-                    self.indices_fbrk.append(brk_faces)
-                    self.indices_not_fbrk.append(not_brk_faces)
-                if milling_path and len(self.parent.mverts[0]) > 0:
-                    self.indices_milling_path.append(mill)
-                self.indices_ffric.append(fric)
-                self.indices_not_ffric.append(nfric)
-                self.indices_fcont.append(cont)
-                self.indices_not_fcont.append(ncont)
-
-            # outline of selected faces
-            if self.select.state == 2:
-                self.outline_selected_faces, all_inds = joint_selected_top_line_indices(self, self.select, all_inds)
-
-            if self.select.n != None and self.select.new_fixed_sides_for_display != None:
-                self.outline_selected_component, all_inds = component_outline_indices(self, all_inds,
-                                                                                      self.select.new_fixed_sides_for_display,
-                                                                                      self.select.n,
-                                                                                      self.select.n * self.parent.vn)
-        self.indices = all_inds
-
-    def randomize_height_fields(self):
-        self.height_fields = get_random_height_fields(self.parent.dim, self.parent.noc)
-        self.voxel_matrix_from_height_fields()
-        self.parent.combine_and_buffer_indices()
-
-    def clear_height_fields(self):
-        self.height_fields = []
-        for n in range(self.parent.noc - 1):
-            hf = np.zeros((self.parent.dim, self.parent.dim))
-            self.height_fields.append(hf)
-        self.voxel_matrix_from_height_fields()
-        self.parent.combine_and_buffer_indices()
-
-    def load_search_results(self, index=-1):
-        # Folder
-        location = os.path.abspath(os.getcwd())
-        location = location.split(os.sep)
-        location.pop()
-        location = os.sep.join(location)
-        location += os.sep + "search_results" + os.sep + "noc_" + str(self.parent.noc) + os.sep + "dim_" + str(
-            self.parent.dim) + os.sep + "fs_"
-        for i in range(len(self.parent.fixed.sides)):
-            for fs in self.parent.fixed.sides[i]:
-                location += str(fs[0]) + str(fs[1])
-            if i != len(self.parent.fixed.sides) - 1: location += ("_")
-        location += os.sep + "allvalid"
-        print("Trying to load geometry from", location)
-        maxi = len(os.listdir(location)) - 1
-        if index == -1: index = random.randint(0, maxi)
-        self.height_fields = np.load(location + os.sep + "height_fields_" + str(index) + ".npy")
-        self.fab_directions = []
-        for i in range(self.parent.noc):
-            if i == 0:
-                self.fab_directions.append(0)
-            else:
-                self.fab_directions.append(1)
-        self.voxel_matrix_from_height_fields()
-        self.parent.combine_and_buffer_indices()
-
-    def edit_height_fields(self, faces, h, n, dir):
-        for ind in faces:
-            self.height_fields[n - dir][tuple(ind)] = h
-            if dir == 0:  # If editing top
-                # If new height is higher than following hf, update to same height
-                for i in range(n - dir + 1, self.parent.noc - 1):
-                    h2 = self.height_fields[i][tuple(ind)]
-                    if h > h2: self.height_fields[i][tuple(ind)] = h
-            if dir == 1:  # If editing bottom
-                # If new height is lower than previous hf, update to same height
-                for i in range(0, n - dir):
-                    h2 = self.height_fields[i][tuple(ind)]
-                    if h < h2: self.height_fields[i][tuple(ind)] = h
-        self.voxel_matrix_from_height_fields()
-        self.parent.combine_and_buffer_indices()

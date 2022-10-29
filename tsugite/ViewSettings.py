@@ -34,16 +34,16 @@ class ViewSettings:
 
         # Colors of unbridged components
         col_yellow = [1.0, 1.0, 0.6]
-        col_turkoise = [0.6, 1.0, 1.0]
+        col_turquoise = [0.6, 1.0, 1.0]
         col_pink = [1.0, 0.6, 1.0]
         col_orange = [1.0, 0.8, 0.6]
         col_purple = [0.8, 0.8, 1.0]
         col_grey = [0.95, 0.95, 0.95]
-        self.unbridge_colors = [[col_yellow, col_turkoise], [col_pink, col_orange], [col_purple, col_grey]]
+        self.unabridged_colors = [[col_yellow, col_turquoise], [col_pink, col_orange], [col_purple, col_grey]]
 
     def set_joint_opening_distance(self, noc: int) -> None:
         if self.open_joint:  # open joint
-            if self.open_start_time == None:
+            if self.open_start_time is None:
                 self.open_start_time = time.time()
                 self.close_start_time = None
             self.open_ratio = self.open_start_dist + 1.2 * (time.time() - self.open_start_time)
@@ -51,7 +51,7 @@ class ViewSettings:
                 self.open_ratio = 1 + 0.5 * (noc - 2)
             self.close_start_dist = self.open_ratio
         else:  # close joint
-            if self.close_start_time == None:
+            if self.close_start_time is None:
                 self.close_start_time = time.time()
                 self.open_start_time = None
             self.open_ratio = self.close_start_dist - 1.2 * (time.time() - self.close_start_time)

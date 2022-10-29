@@ -29,12 +29,6 @@ class Buffer:
 
     # TODO: Buffer has a return?
     def buffer_vertices(self):
-        try:
-            cnt = 6*len(self.parent.vertices)
-            glBufferData(GL_ARRAY_BUFFER, cnt, self.parent.vertices, GL_DYNAMIC_DRAW)
-        except:
-            print("--------------------------ERROR IN ARRAY BUFFER WRAPPER -------------------------------------")
-
         # vertex attribute pointers
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0)) #position
         glEnableVertexAttribArray(0)
@@ -56,6 +50,12 @@ class Buffer:
         glBindTexture(GL_TEXTURE_2D, 2)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 400, 400, 0, GL_RGB, GL_UNSIGNED_BYTE, self.img_data_cont)
 
-    def buffer_indices(self) -> None:
+        try:
+            cnt = 6*len(self.parent.vertices)
+            return glBufferData(GL_ARRAY_BUFFER, cnt, self.parent.vertices, GL_DYNAMIC_DRAW)
+        except:
+            print("--------------------------ERROR IN ARRAY BUFFER WRAPPER -------------------------------------")
+
+    def buffer_indices(self):
         cnt = 4*len(self.parent.indices)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, cnt, self.parent.indices, GL_DYNAMIC_DRAW)
+        return glBufferData(GL_ELEMENT_ARRAY_BUFFER, cnt, self.parent.indices, GL_DYNAMIC_DRAW)

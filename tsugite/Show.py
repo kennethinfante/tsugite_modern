@@ -7,6 +7,8 @@ import pyrr
 # imports just for joint_type hints - I can't use the generic TypingHelper file because it's causing circular dependency
 from JointTypes import JointType
 
+
+# noinspection PyAttributeOutsideInit,PyChainedComparisons
 class Show:
     def __init__(self, _glWidget, joint_type: JointType) -> None:       # parent is GLWidget
         self.parent = _glWidget
@@ -115,7 +117,7 @@ class Show:
             moves.append(move_mat)
         if clear_depth_buffer: glClear(GL_DEPTH_BUFFER_BIT)
         for geo in geos:
-            if geo == None: continue
+            if geo is None: continue
             if self.view.hidden[geo.n]: continue
             glUniformMatrix4fv(4, 1, GL_FALSE, moves[geo.n])
             glDrawElements(geo.draw_type, geo.count, GL_UNSIGNED_INT, ctypes.c_void_p(4 * geo.start_index))
@@ -161,7 +163,7 @@ class Show:
         glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE)
         glDepthRange(0.0, 0.9975)
         for geo in show_geos:
-            if geo == None: continue
+            if geo is None: continue
             if self.view.hidden[geo.n]: continue
             glUniformMatrix4fv(4, 1, GL_FALSE, moves_show[geo.n])
             glDrawElements(geo.draw_type, geo.count, GL_UNSIGNED_INT, ctypes.c_void_p(4 * geo.start_index))
@@ -171,7 +173,7 @@ class Show:
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP)
         glDepthRange(0.0025, 1.0)
         for geo in screen_geos:
-            if geo == None: continue
+            if geo is None: continue
             if self.view.hidden[geo.n]: continue
             glUniformMatrix4fv(4, 1, GL_FALSE, moves[geo.n])
             glDrawElements(geo.draw_type, geo.count, GL_UNSIGNED_INT, ctypes.c_void_p(4 * geo.start_index))
@@ -179,7 +181,7 @@ class Show:
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
         glDepthRange(0.0, 0.9975)
         for geo in show_geos:
-            if geo == None: continue
+            if geo is None: continue
             if self.view.hidden[geo.n]: continue
             glUniformMatrix4fv(4, 1, GL_FALSE, moves_show[geo.n])
             glDrawElements(geo.draw_type, geo.count, GL_UNSIGNED_INT, ctypes.c_void_p(4 * geo.start_index))
@@ -227,14 +229,15 @@ class Show:
         mouse_pixel = glReadPixelsub(xpos, height - ypos, 1, 1, GL_RGB, outputType=None)[0][0]
         mouse_pixel = np.array(mouse_pixel)
         pick_n = pick_d = pick_x = pick_y = None
-        self.joint_type.mesh.select.suggstate = -1
-        self.joint_type.mesh.select.gallstate = -1
+        self.joint_type.mesh.select.suggestions_state = -1
+        self.joint_type.mesh.select.gallery_state = -1
         if not self.view.gallery:
             if xpos > self.parent.width - self.parent.wstep:  # suggestion side
                 if ypos > 0 and ypos < self.parent.height:
                     index = int(ypos / self.parent.hstep)
-                    if self.joint_type.mesh.select.suggstate != index:
-                        self.joint_type.mesh.select.suggstate = index
+                    if self.joint_type.mesh.select.suggestions_state != index:
+                        self.joint_type.mesh.select.suggestions_state = index
+
             elif not np.all(mouse_pixel == 255):  # not white / background
                 non_zeros = np.where(mouse_pixel != 0)
                 if len(non_zeros) > 0:
@@ -260,19 +263,21 @@ class Show:
                 i = int(xpos/400)
                 j = int(ypos/400)
                 index = i*4+j
-                mesh.select.gallstate=index
+                mesh.select.gallery_state=index
                 mesh.select.state = -1
-                mesh.select.suggstate = -1
+                mesh.select.suggestions_state = -1
         """
         ### Update selection
-        if pick_x != None and pick_d != None and pick_y != None and pick_n != None:
+        if pick_x is not None and pick_d is not None and pick_y is not None and pick_n is not None:
+
             ### Initialize selection
             new_pos = False
             if pick_x != self.joint_type.mesh.select.x or pick_y != self.joint_type.mesh.select.y or pick_n != self.joint_type.mesh.select.n or pick_d != self.joint_type.mesh.select.direction or self.joint_type.mesh.select.refresh:
                 self.joint_type.mesh.select.update_pick(pick_x, pick_y, pick_n, pick_d)
                 self.joint_type.mesh.select.refresh = False
                 self.joint_type.mesh.select.state = 0  # hovering
-        elif pick_n != None:
+
+        elif pick_n is not None:
             self.joint_type.mesh.select.state = 10  # hovering component body
             self.joint_type.mesh.select.update_pick(pick_x, pick_y, pick_n, pick_d)
         else:
@@ -339,7 +344,7 @@ class Show:
 
     def moving_rotating(self):
         # Draw moved_rotated component before action is finalized
-        if self.joint_type.mesh.select.state == 12 and self.joint_type.mesh.outline_selected_component != None:
+        if self.joint_type.mesh.select.state == 12 and self.joint_type.mesh.outline_selected_component is not None:
             glPushAttrib(GL_ENABLE_BIT)
             glLineWidth(3)
             glEnable(GL_LINE_STIPPLE)
@@ -349,7 +354,7 @@ class Show:
 
     def joint_geometry(self, mesh=None, lw=3, hidden=True, zoom=False):
 
-        if mesh == None: mesh = self.joint_type.mesh
+        if mesh is None: mesh = self.joint_type.mesh
 
         ############################# Draw hidden lines #############################
         glClear(GL_DEPTH_BUFFER_BIT)
@@ -367,7 +372,7 @@ class Show:
 
         ############################ Draw visible lines #############################
         for n in range(mesh.parent.noc):
-            if not mesh.mainmesh or (
+            if not mesh.main_mesh or (
                     mesh.eval.interlocks[n] and self.view.show_feedback) or not self.view.show_feedback:
                 glUniform3f(5, 0.0, 0.0, 0.0)  # black
                 glLineWidth(lw)
@@ -378,7 +383,7 @@ class Show:
             G1 = mesh.indices_fall
             self.draw_geometries_with_excluded_area(G0, G1)
 
-        if mesh.mainmesh:
+        if mesh.main_mesh:
             ################ When joint is fully open, draw dahsed lines ################
             if hidden and not self.view.hidden[0] and not self.view.hidden[1] and self.view.open_ratio == 1 + 0.5 * (
                     mesh.parent.noc - 2):
@@ -431,7 +436,7 @@ class Show:
             if not self.joint_type.mesh.eval.bridged[n]:
                 for m in range(2):  # browse the two parts
                     # a) Unbridge part 1
-                    col = self.view.unbridge_colors[n][m]
+                    col = self.view.unabridged_colors[n][m]
                     glUniform3f(5, col[0], col[1], col[2])
                     G0 = [self.joint_type.mesh.indices_not_fbridge[n][m]]
                     G1 = [self.joint_type.mesh.indices_not_fbridge[n][1 - m],
@@ -453,7 +458,7 @@ class Show:
         glUniform3f(5, 0.0, 0.0, 0.0)
         ############################## Direction arrows ################################
         for n in range(self.joint_type.noc):
-            if (self.joint_type.mesh.eval.interlocks[n]):
+            if self.joint_type.mesh.eval.interlocks[n]:
                 glUniform3f(5, 0.0, 0.0, 0.0)  # black
             else:
                 glUniform3f(5, 1.0, 0.0, 0.0)  # red

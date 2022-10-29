@@ -6,11 +6,9 @@ import copy
 import math
 from Misc import FixedSide
 
-# aliases
-Degree = float
+from TypingHelper import *
 
-
-def angle_between_with_direction(v0: ArrayLike, v1: ArrayLike) -> Degree:
+def angle_between_with_direction(v0: ArrayLike, v1: ArrayLike) -> DegreeFloat:
     v0 = v0 / np.linalg.norm(v0)
     v1 = v1 / np.linalg.norm(v1)
     angle = np.math.atan2(np.linalg.det([v0, v1]), np.dot(v0, v1))
@@ -22,15 +20,15 @@ def unitize(v: ArrayLike) -> ArrayLike:
     return uv
 
 
-def get_same_height_neighbors(hfield: list[ArrayLike], inds: list[ArrayLike]) -> list[ArrayLike]:
+def get_same_height_neighbors(hfield: list, inds: list) -> list:
     dim = len(hfield)
-    val = hfield[tuple(inds[0])]
+    val = hfield[tuple(inds[0])]        # cast the inds[0] to tuple
     new_inds = list(inds)
     for ind in inds:
         for ax in range(2):
-            for dir in range(-1, 2, 2):
+            for direction in range(-1, 2, 2):
                 ind2 = ind.copy()
-                ind2[ax] += dir
+                ind2[ax] += direction
                 if np.all(ind2 >= 0) and np.all(ind2 < dim):
                     val2 = hfield[tuple(ind2)]
                     if val2 == val:
@@ -45,11 +43,12 @@ def get_same_height_neighbors(hfield: list[ArrayLike], inds: list[ArrayLike]) ->
     return new_inds
 
 
+# noinspection PyAttributeOutsideInit
 class Selection:
     def __init__(self, parent) -> None:
-        self.state = -1  # -1: nothing, 0: hovered, 1: adding, 2: pulling, 10: timber hovered, 12: timber pulled
-        self.suggstate = -1  # -1: nothing, 0: hovering first, 1: hovering secong, and so on.
-        self.gallstate = -1
+        self.state: TimberState = -1
+        self.suggestions_state: HoveringState = -1
+        self.gallery_state: HoveringState = -1
         self.parent = parent
         self.n = self.x = self.y = None
         self.refresh = False
@@ -58,7 +57,6 @@ class Selection:
         self.new_fixed_sides_for_display = None
         self.val = 0
 
-    # to check
     def update_pick(self, x, y, n, direction) -> None:
         self.n = n
         self.x = x
@@ -66,7 +64,8 @@ class Selection:
         self.direction = direction
         if self.x is not None and self.y is not None:
             if self.shift:
-                self.faces = get_same_height_neighbors(self.parent.height_fields[n - direction], [np.array([self.x, self.y])])
+                self.faces = get_same_height_neighbors(self.parent.height_fields[n - direction],
+                                                       [np.array([self.x, self.y])])
             else:
                 self.faces = [np.array([self.x, self.y])]
 
@@ -85,22 +84,25 @@ class Selection:
     def edit(self, mouse_pos: list[int, int], screen_xrot, screen_yrot, w: int = 1600, h: int = 1600) -> None:
         self.current_pos = np.array([mouse_pos[0], -mouse_pos[1]])
         self.current_height = self.start_height
+
         ## Mouse vector
         mouse_vec = np.array(self.current_pos - self.start_pos)
         mouse_vec = mouse_vec.astype(float)
         mouse_vec[0] = 2 * mouse_vec[0] / w
         mouse_vec[1] = 2 * mouse_vec[1] / h
+
         ## Sliding direction vector
-        sdir_vec = [0, 0, 0]
-        sdir_vec = np.copy(self.parent.parent.pos_vecs[self.parent.parent.sax])  # <-new
+        # sdir_vec = [0, 0, 0]
+        sdir_vec = np.copy(self.parent.parent.pos_vecs[self.parent.parent.sax])
         rot_x = pyrr.Matrix33.from_x_rotation(screen_xrot)
         rot_y = pyrr.Matrix33.from_y_rotation(screen_yrot)
         sdir_vec = np.dot(sdir_vec, rot_x * rot_y)
         sdir_vec = np.delete(sdir_vec, 2)  # delete Z-value
+
         ## Calculate angle between mouse vector and sliding direction vector
         cosang = np.dot(mouse_vec, sdir_vec)  # Negative / positive depending on direction
         val = int(linalg.norm(mouse_vec) / linalg.norm(sdir_vec) + 0.5)
-        if cosang != None and cosang < 0: val = -val
+        if cosang is not None and cosang < 0: val = -val
         if self.start_height + val > self.parent.parent.dim:
             val = self.parent.parent.dim - self.start_height
         elif self.start_height + val < 0:
@@ -120,7 +122,8 @@ class Selection:
         self.state = -1
         self.new_fixed_sides_for_display = None
 
-    def move(self, mouse_pos: list[int, int], screen_xrot, screen_yrot, w: int = 1600, h: int =1600) -> None:  # actually move OR rotate
+    def move(self, mouse_pos: list[int, int], screen_xrot, screen_yrot, w: int = 1600, h: int = 1600) \
+            -> None:  # actually move OR rotate
         sax = self.parent.parent.sax
         noc = self.parent.parent.noc
         self.new_fixed_sides = copy.deepcopy(self.parent.parent.fixed.sides[self.n])
@@ -152,7 +155,7 @@ class Selection:
                 # Check plane of rotating by checking which axis the vector is more aligned to
                 other_axes = [0, 1, 2]
                 other_axes.pop(comp_ax)
-                # The axis that is flatter to the scren will be processed
+                # The axis that is flatter to the screen will be processed
                 maxlen = 0
                 for i in range(len(other_axes)):
                     other_vec = [0, 0, 0]
@@ -205,8 +208,9 @@ class Selection:
                     if absang > 135:
                         self.new_fixed_sides_for_display = [FixedSide(comp_ax, 1)]  # positive direction
                     else:
+                        # negative direction self.new_fixed_sides_for_display = [FixedSide(comp_ax,0)]
                         self.new_fixed_sides_for_display = [FixedSide(comp_ax,
-                                                                      0)]  # negative direction                            self.new_fixed_sides_for_display = [FixedSide(comp_ax,0)]
+                                                                      0)]
             # check if the direction is blocked
             blocked = False
             for side in self.new_fixed_sides_for_display:
@@ -221,4 +225,5 @@ class Selection:
                 if all_same: blocked = False
             if not blocked: self.new_fixed_sides = self.new_fixed_sides_for_display
         if not np.equal(self.parent.parent.fixed.sides[self.n], np.array(self.new_fixed_sides_for_display)).all():
-            self.parent.parent.combine_and_buffer_indices()  # for move/rotate preview outline # can't you show this by tansformation instead?
+            # for move/rotate preview outline # can't you show this by transformation instead?
+            self.parent.parent.combine_and_buffer_indices()

@@ -14,6 +14,8 @@ from Misc import FixedSides
 
 from TypingHelper import *
 
+
+# noinspection PyDefaultArgument,PyAttributeOutsideInit,PyBroadException
 class JointType:
     def __init__(self, parent,
                  fs=[],
@@ -41,7 +43,8 @@ class JointType:
         self.component_length = 0.5 * self.component_size
         self.ratio = np.average(self.real_tim_dims) / self.component_size
         self.voxel_sizes = np.copy(self.real_tim_dims) / (self.ratio * self.dim)
-        self.fab = Fabrication(self, tolerances=tolerances, bit_diameter=bit_diameter, fab_ext=fab_ext, align_ax=align_ax, arc_interp=arc_interp, spindle_speed=spindle_speed,
+        self.fab = Fabrication(self, tolerances=tolerances, bit_diameter=bit_diameter, fab_ext=fab_ext,
+                               align_ax=align_ax, arc_interp=arc_interp, spindle_speed=spindle_speed,
                                fab_speed=fab_speed)
         self.vertex_no_info = 8
         self.ang = angle
@@ -92,7 +95,7 @@ class JointType:
                 self.m_start.append(mst)
                 mst += int(len(self.mverts[n]) / 8)
 
-        self.buff.buffer_vertices()
+        return self.buff.buffer_vertices()
 
     def create_joint_vertices(self, ax):
         vertices = []
@@ -121,13 +124,16 @@ class JointType:
                     kvec = (k - 0.5 * self.dim) * self.pos_vecs[2]
                     pos = ivec + jvec + kvec
                     x, y, z = pos
+
                     # texture coordinates
-                    tex_coords = [i, j, k]  ##################################################################
+                    tex_coords = [i, j, k]
                     tex_coords.pop(ax)
                     tx = tex_coords[0] / self.dim
                     ty = tex_coords[1] / self.dim
+
                     # extend list of vertices
                     vertices.extend([x, y, z, r, g, b, tx, ty])
+
         # Calculate extra length for angled components
         extra_len = 0
         if self.ang != 0.0 and self.rot:
@@ -138,13 +144,13 @@ class JointType:
                 extra_l = 0
             else:
                 extra_l = extra_len
-            for dir in range(-1, 2, 2):
+            for direction in range(-1, 2, 2):
                 for step in range(3):
                     if step == 0:
                         step = 1
                     else:
                         step += 0.5 + extra_len
-                    axvec = dir * step * (self.component_size + extra_l) * self.pos_vecs[ax] / np.linalg.norm(
+                    axvec = direction * step * (self.component_size + extra_l) * self.pos_vecs[ax] / np.linalg.norm(
                         self.pos_vecs[ax])
                     for x in range(2):
                         for y in range(2):
@@ -255,7 +261,7 @@ class JointType:
         self.combine_and_buffer_indices()
 
     def reset(self, fs=None, sax=2, dim=3, ang=90., td=[44.0, 44.0, 44.0], incremental=False, align_ax=0, fabdia=6.0,
-              fabtol=0.15, finterp=True, fabrot=0.0, fabext="gcode", hfs=[], fspe=400, fspi=600):
+              fabtol=0.15, finterp=True, fabrot=0.0, fabext="gcode", hfs: ArrayLike = np.array([]), fspe=400, fspi=600):
         self.fixed = FixedSides(self, fs=fs)
         self.noc = len(self.fixed.sides)
         self.sax = sax
@@ -289,11 +295,12 @@ class JointType:
             sugg_hfs = []
             if not self.mesh.eval.valid:
                 sugg_hfs = produce_suggestions(self, self.mesh.height_fields)
-                for i in range(len(sugg_hfs)): self.suggestions.append(Geometries(self, mainmesh=False, hfs=sugg_hfs[i]))
+                for i in range(len(sugg_hfs)): self.suggestions.append(Geometries(self,
+                                                                                  main_mesh=False, hfs=sugg_hfs[i]))
 
     def init_gallery(self, start_index):
         self.gallery_start_index = start_index
-        # do not reset again cause they are already in the init
+        # do not reset again because they are already in the init
         # self.gallery_figures = []
         # self.suggestions = []
 
@@ -310,11 +317,12 @@ class JointType:
             if i != len(self.fixed.sides) - 1: location += ("_")
         location += os.sep + "allvalid"
         maxi = len(os.listdir(location)) - 1
+
         for i in range(20):
             if (i + start_index) > maxi: break
             try:
                 hfs = np.load(location + os.sep + "height_fields_" + str(start_index + i) + ".npy")
-                self.gallery_figures.append(Geometries(self, mainmesh=False, hfs=hfs))
+                self.gallery_figures.append(Geometries(self, main_mesh=False, hfs=hfs))
             except:
                 abc = 0
 
@@ -463,15 +471,17 @@ class JointType:
         self.reset(fs=fs, sax=sax, dim=dim, ang=ang, td=[dx, dy, dz], fabdia=dia, fabtol=tol, align_ax=aln, finterp=fin,
                    incremental=inc, fabext=ext, hfs=hfs, fspe=spe, fspi=spi)
 
+
 def normalize(v: ArrayLike) -> ArrayLike:
-    norm = linalg.norm(v) # norm can return float or ndarray
+    norm = linalg.norm(v)  # norm can return float or ndarray
     if norm == 0:
         return v
     else:
         return v / norm
 
 
-def mat_from_fields(hfs: list, ax: int) -> ZeroArray:  ### duplicated function - also exists in Geometries, mat is numpy zeroes
+def mat_from_fields(hfs: list,
+                    ax: int) -> ZeroArray:  # duplicated function - also exists in Geometries, mat is numpy zeroes
     dim = len(hfs[0])
     mat = np.zeros(shape=(dim, dim, dim))
     for i in range(dim):
@@ -500,7 +510,8 @@ def angle_between(vector_1: ArrayLike, vector_2: ArrayLike) -> DegreeArray:
     return angle
 
 
-def rotate_vector_around_axis(vec:list = [3, 5, 0], axis:list = [4, 4, 1], theta:float = 1.2) -> DotProduct:
+# noinspection PyDefaultArgument
+def rotate_vector_around_axis(vec: list = [3, 5, 0], axis: list = [4, 4, 1], theta: float = 1.2) -> DotProduct:
     axis = np.asarray(axis)
     axis = axis / math.sqrt(np.dot(axis, axis))
     a = math.cos(theta / 2.0)
@@ -520,16 +531,16 @@ def arrow_vertices(self) -> ArrayLike:
     tx = ty = 0.0
     vertices.extend([0, 0, 0, r, g, b, tx, ty])  # origin
     for ax in range(3):
-        for dir in range(-1, 2, 2):
+        for direction in range(-1, 2, 2):
             # arrow base
-            xyz = dir * self.pos_vecs[ax] * self.dim * 0.4
+            xyz = direction * self.pos_vecs[ax] * self.dim * 0.4
             vertices.extend([xyz[0], xyz[1], xyz[2], r, g, b, tx, ty])  # end of line
             # arrow head
             for i in range(-1, 2, 2):
                 for j in range(-1, 2, 2):
                     other_axes = [0, 1, 2]
                     other_axes.pop(ax)
-                    pos = dir * self.pos_vecs[ax] * self.dim * 0.3
+                    pos = direction * self.pos_vecs[ax] * self.dim * 0.3
                     pos += i * self.pos_vecs[other_axes[0]] * self.dim * 0.025
                     pos += j * self.pos_vecs[other_axes[1]] * self.dim * 0.025
                     vertices.extend([pos[0], pos[1], pos[2], r, g, b, tx, ty])  # arrow head indices
@@ -538,6 +549,7 @@ def arrow_vertices(self) -> ArrayLike:
     return vertices
 
 
+# noinspection PyChainedComparisons
 def produce_suggestions(joint_type: JointType, hfs: list) -> list:
     valid_suggestions = []
     for i in range(len(hfs)):
@@ -547,6 +559,7 @@ def produce_suggestions(joint_type: JointType, hfs: list) -> list:
                     sugg_hfs = copy.deepcopy(hfs)
                     sugg_hfs[i][j][k] += add
                     val = sugg_hfs[i][j][k]
+
                     if val >= 0 and val <= joint_type.dim:
                         sugg_voxmat = mat_from_fields(sugg_hfs, joint_type.sax)
                         sugg_eval = Evaluation(sugg_voxmat, joint_type, mainmesh=False)
@@ -652,13 +665,14 @@ def get_region_outline_vertices(reg_inds, lay_mat, org_lay_mat, pad_loc, n):
     return reg_verts
 
 
+# noinspection PyChainedComparisons
 def get_diff_neighbors(mat2, inds, val):
     new_inds = list(inds)
     for ind in inds:
         for ax in range(2):
-            for dir in range(-1, 2, 2):
+            for direction in range(-1, 2, 2):
                 ind2 = ind.copy()
-                ind2[ax] += dir
+                ind2[ax] += direction
                 if ind2[ax] >= 0 and ind2[ax] < mat2.shape[ax]:
                     val2 = mat2[tuple(ind2)]
                     if val2 == val or val2 == -1: continue
@@ -673,12 +687,12 @@ def get_diff_neighbors(mat2, inds, val):
     return new_inds
 
 
-def rough_milling_path(type, rough_pixs, lay_num, n):
+def rough_milling_path(joint_type, rough_pixs, lay_num, n):
     mvertices = []
 
     # Defines axes
-    ax = type.sax  # mill bit axis
-    dir = type.mesh.fab_directions[n]
+    ax = joint_type.sax  # mill bit axis
+    direction = joint_type.mesh.fab_directions[n]
     axes = [0, 1, 2]
     axes.pop(ax)
     dir_ax = axes[0]  # primary milling direction axis
@@ -686,15 +700,15 @@ def rough_milling_path(type, rough_pixs, lay_num, n):
 
     # Define fabrication parameters
 
-    no_lanes = 2 + math.ceil(((type.real_tim_dims[axes[1]] / type.dim) - 2 * type.fab.diameter) / type.fab.diameter)
-    lane_width = (type.voxel_sizes[axes[1]] - type.fab.vdia) / (no_lanes - 1)
-    ratio = np.linalg.norm(type.pos_vecs[axes[1]]) / type.voxel_sizes[axes[1]]
-    v_vrad = type.fab.vrad * ratio
+    no_lanes = 2 + math.ceil(((joint_type.real_tim_dims[axes[1]] / joint_type.dim) - 2 * joint_type.fab.diameter) / joint_type.fab.diameter)
+    lane_width = (joint_type.voxel_sizes[axes[1]] - joint_type.fab.vdia) / (no_lanes - 1)
+    ratio = np.linalg.norm(joint_type.pos_vecs[axes[1]]) / joint_type.voxel_sizes[axes[1]]
+    v_vrad = joint_type.fab.vrad * ratio
     lane_width = lane_width * ratio
 
     # create offset direction vectors
-    dir_vec = normalize(type.pos_vecs[axes[0]])
-    off_vec = normalize(type.pos_vecs[axes[1]])
+    dir_vec = normalize(joint_type.pos_vecs[axes[0]])
+    off_vec = normalize(joint_type.pos_vecs[axes[1]])
 
     # get top ones to cut out
     for pix in rough_pixs:
@@ -721,7 +735,7 @@ def rough_milling_path(type, rough_pixs, lay_num, n):
         if found: continue
 
         # find next same
-        for i in range(type.dim):
+        for i in range(joint_type.dim):
             nind = pix.ind_abs.copy()
             nind[0] += i
             found = False
@@ -733,27 +747,27 @@ def rough_milling_path(type, rough_pixs, lay_num, n):
                             found = True
                             pix_end = pix2
                             break
-            if found == False: break
+            if not found: break
 
         # start
         ind = list(pix.ind_abs)
-        ind.insert(ax, (type.dim - 1) * (1 - dir) + (2 * dir - 1) * lay_num)  # 0 when n is 1, dim-1 when n is 0
+        ind.insert(ax, (joint_type.dim - 1) * (1 - direction) + (2 * direction - 1) * lay_num)  # 0 when n is 1, dim-1 when n is 0
         add = [0, 0, 0]
-        add[ax] = 1 - dir
-        i_pt = get_index(ind, add, type.dim)
-        pt1 = get_vertex(i_pt, type.jverts[n], type.vertex_no_info)
+        add[ax] = 1 - direction
+        i_pt = get_index(ind, add, joint_type.dim)
+        pt1 = get_vertex(i_pt, joint_type.jverts[n], joint_type.vertex_no_info)
         # end
         ind = list(pix_end.ind_abs)
-        ind.insert(ax, (type.dim - 1) * (1 - dir) + (2 * dir - 1) * lay_num)  # 0 when n is 1, dim-1 when n is 0
+        ind.insert(ax, (joint_type.dim - 1) * (1 - direction) + (2 * direction - 1) * lay_num)  # 0 when n is 1, dim-1 when n is 0
         add = [0, 0, 0]
-        add[ax] = 1 - dir
+        add[ax] = 1 - direction
         add[dir_ax] = 1
-        i_pt = get_index(ind, add, type.dim)
-        pt2 = get_vertex(i_pt, type.jverts[n], type.vertex_no_info)
+        i_pt = get_index(ind, add, joint_type.dim)
+        pt2 = get_vertex(i_pt, joint_type.jverts[n], joint_type.vertex_no_info)
 
         ### REFINE THIS FUNCTION
-        dir_add1 = pix.neighbors[dir_ax][0] * 2.5 * type.fab.vrad * dir_vec
-        dir_add2 = -pix_end.neighbors[dir_ax][1] * 2.5 * type.fab.vrad * dir_vec
+        dir_add1 = pix.neighbors[dir_ax][0] * 2.5 * joint_type.fab.vrad * dir_vec
+        dir_add2 = -pix_end.neighbors[dir_ax][1] * 2.5 * joint_type.fab.vrad * dir_vec
 
         pt1 = pt1 + v_vrad * off_vec + dir_add1
         pt2 = pt2 + v_vrad * off_vec + dir_add2
@@ -773,31 +787,33 @@ def rough_milling_path(type, rough_pixs, lay_num, n):
     return mvertices
 
 
-def edge_milling_path(type, lay_num, n):
+def edge_milling_path(joint_type, lay_num, n):
     mverts = []
 
-    if len(type.fixed.sides[n]) == 1 and type.fixed.sides[n][0].ax != type.sax:
+    if len(joint_type.fixed.sides[n]) == 1 and joint_type.fixed.sides[n][0].ax != joint_type.sax:
 
         # ax direction of current fixed side
-        ax = type.fixed.sides[n][0].ax
-        dir = type.fixed.sides[n][0].direction
+        ax = joint_type.fixed.sides[n][0].ax
+        direction = joint_type.fixed.sides[n][0].direction
+
         # oax - axis perp. to component axis
         oax = [0, 1, 2]
-        oax.remove(type.sax)
+        oax.remove(joint_type.sax)
         oax.remove(ax)
         oax = oax[0]
+
         # fabrication direction
-        fdir = type.mesh.fab_directions[n]
+        fdir = joint_type.mesh.fab_directions[n]
 
         # check so that that part is not removed anyways...
         # i.e. if the whole bottom row in that direction is of other material
         ind = [0, 0, 0]
-        ind[ax] = (1 - dir) * (type.dim - 1)
-        ind[type.sax] = fdir * (type.dim - 1)
+        ind[ax] = (1 - direction) * (joint_type.dim - 1)
+        ind[joint_type.sax] = fdir * (joint_type.dim - 1)
         free = True
-        for i in range(type.dim):
+        for i in range(joint_type.dim):
             ind[oax] = i
-            val = type.mesh.voxel_matrix[tuple(ind)]
+            val = joint_type.mesh.voxel_matrix[tuple(ind)]
             if int(val) == n:
                 free = False
                 break
@@ -806,20 +822,20 @@ def edge_milling_path(type, lay_num, n):
             # define start (pt0) and end (pt1) points of edge
             ind = [0, 0, 0]
             add = [0, 0, 0]
-            ind[ax] = (1 - dir) * type.dim
-            ind[type.sax] = type.dim * (1 - fdir) + (2 * fdir - 1) * lay_num
-            i_pt = get_index(ind, add, type.dim)
-            pt0 = get_vertex(i_pt, type.jverts[n], type.vertex_no_info)
-            ind[oax] = type.dim
-            i_pt = get_index(ind, add, type.dim)
-            pt1 = get_vertex(i_pt, type.jverts[n], type.vertex_no_info)
+            ind[ax] = (1 - direction) * joint_type.dim
+            ind[joint_type.sax] = joint_type.dim * (1 - fdir) + (2 * fdir - 1) * lay_num
+            i_pt = get_index(ind, add, joint_type.dim)
+            pt0 = get_vertex(i_pt, joint_type.jverts[n], joint_type.vertex_no_info)
+            ind[oax] = joint_type.dim
+            i_pt = get_index(ind, add, joint_type.dim)
+            pt1 = get_vertex(i_pt, joint_type.jverts[n], joint_type.vertex_no_info)
 
             # offset edge line by radius of millingbit
             dir_vec = normalize(pt0 - pt1)
             sax_vec = [0, 0, 0]
-            sax_vec[type.sax] = 2 * fdir - 1
+            sax_vec[joint_type.sax] = 2 * fdir - 1
             off_vec = rotate_vector_around_axis(dir_vec, sax_vec, math.radians(90))
-            off_vec = (2 * dir - 1) * type.fab.vrad * off_vec
+            off_vec = (2 * direction - 1) * joint_type.fab.vrad * off_vec
             pt0 = pt0 + off_vec
             pt1 = pt1 + off_vec
 
@@ -838,9 +854,9 @@ def set_starting_vert(verts):
                 first_i = i
             else:
                 second_i = i
-    if first_i == None:
+    if first_i is None:
         first_i = second_i
-    if first_i == None: first_i = 0
+    if first_i is None: first_i = 0
     verts.insert(0, verts[first_i])
     verts.pop(first_i + 1)
     return verts
@@ -902,7 +918,7 @@ def get_sublist_of_ordered_verts(verts):
     if len(ord_verts) > 3:  # needs to be at least 4 vertices to be able to close
         start_ind = np.array(ord_verts[0].ind.copy())
         end_ind = np.array(ord_verts[-1].ind.copy())
-        diff_ind = start_ind - end_ind  ###reverse?
+        diff_ind = start_ind - end_ind  # reverse?
         if len(np.argwhere(diff_ind == 0)) == 1:  # difference only in one axis
             vax = np.argwhere(diff_ind != 0)[0][0]
             if abs(diff_ind[vax]) == 1:  # difference is only one step
@@ -931,11 +947,11 @@ def set_vector_length(vec, new_norm):
     return vec
 
 
-def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b, verts, lay_num, n):
+def offset_verts(joint_type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b, verts, lay_num, n):
     outline = []
     corner_artifacts = []
 
-    fdir = type.mesh.fab_directions[n]
+    fdir = joint_type.mesh.fab_directions[n]
 
     test_first = True
     for i, rv in enumerate(list(verts)):  # browse each vertex in the outline
@@ -943,16 +959,16 @@ def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b,
         # remove vertices with neighbor count 2 #OK
         if rv.region_count == 2 and rv.block_count == 2: continue  # redundant
         if rv.block_count == 0: continue  # redundant
-        if rv.ind[0] < 0 or rv.ind[0] > type.dim: continue  # out of bounds
-        if rv.ind[1] < 0 or rv.ind[1] > type.dim: continue  # out of bounds
+        if rv.ind[0] < 0 or rv.ind[0] > joint_type.dim: continue  # out of bounds
+        if rv.ind[1] < 0 or rv.ind[1] > joint_type.dim: continue  # out of bounds
 
         # add vertex information #OK
         ind = rv.ind.copy()
-        ind.insert(type.sax, (type.dim - 1) * (1 - fdir) + (2 * fdir - 1) * lay_num)
+        ind.insert(joint_type.sax, (joint_type.dim - 1) * (1 - fdir) + (2 * fdir - 1) * lay_num)
         add = [0, 0, 0]
-        add[type.sax] = 1 - fdir
-        i_pt = get_index(ind, add, type.dim)
-        pt = get_vertex(i_pt, type.jverts[n], type.vertex_no_info)
+        add[joint_type.sax] = 1 - fdir
+        i_pt = get_index(ind, add, joint_type.dim)
+        pt = get_vertex(i_pt, joint_type.jverts[n], joint_type.vertex_no_info)
 
         # move vertex according to boundary condition <---needs to be updated
         off_vecs = []
@@ -971,7 +987,7 @@ def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b,
         rounded = False
         if rv.region_count == 3:  # outer corner, check if it should be rounded or not
             # check if this outer corner correspond to an inner corner of another material
-            for n2 in range(type.noc):
+            for n2 in range(joint_type.noc):
                 if n2 == n: continue
                 cnt = np.sum(rv.flat_neighbor_values == n2)
                 if cnt == 3:
@@ -986,7 +1002,7 @@ def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b,
             nind = tuple(np.argwhere(rv.neighbors == 1)[0])
             off_vec_a = -neighbor_vectors_a[nind]
             off_vec_b = -neighbor_vectors_b[nind]
-            le2 = math.sqrt(math.pow(2 * np.linalg.norm(off_vec_a + off_vec_b), 2) - math.pow(2 * type.fab.vrad,
+            le2 = math.sqrt(math.pow(2 * np.linalg.norm(off_vec_a + off_vec_b), 2) - math.pow(2 * joint_type.fab.vrad,
                                                                                               2)) - np.linalg.norm(
                 off_vec_a)
             off_vec_a2 = set_vector_length(off_vec_a, le2)
@@ -1011,17 +1027,20 @@ def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b,
 
             # Extreme case where corner is very rounded and everything is not cut
             dist = linalg.norm(pt - ctr)
-            if dist > type.fab.vdia and lay_num < type.dim - 1:
+            if dist > joint_type.fab.vdia and lay_num < joint_type.dim - 1:
                 artifact = []
-                v0 = type.fab.vdia * normalize(pt + off_vec - pts[0])
-                v1 = type.fab.vdia * normalize(pt + off_vec - pts[1])
-                vp = type.fab.vrad * normalize(pts[1] - pts[0])
+                v0 = joint_type.fab.vdia * normalize(pt + off_vec - pts[0])
+                v1 = joint_type.fab.vdia * normalize(pt + off_vec - pts[1])
+                vp = joint_type.fab.vrad * normalize(pts[1] - pts[0])
                 pts3 = [pts[0] - vp + v0, pt + 2 * off_vec, pts[1] + vp + v1]
-                while linalg.norm(pts3[2] - pts3[0]) > type.fab.vdia:
+
+                while linalg.norm(pts3[2] - pts3[0]) > joint_type.fab.vdia:
                     pts3[0] += vp
                     pts3[1] += -off_vec
                     pts3[2] += -vp
-                    for i in range(3): artifact.append(MillVertex(pts3[i]))
+
+                    for j in range(3): artifact.append(MillVertex(pts3[j]))
+
                     pts3.reverse()
                     vp = -vp
                 if len(artifact) > 0:
@@ -1031,7 +1050,7 @@ def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b,
             pt = pt + off_vec
             outline.append(MillVertex(pt))
         if len(outline) > 2 and outline[0].is_arc and test_first:
-            # if the previous one was an arc but it was the first point of the outline,
+            # if the previous one was an arc and it was the first point of the outline,
             # so we couldn't verify the order of the points
             # we might need to retrospectively switch order of the arc points
             npt = outline[2].pt
@@ -1043,16 +1062,16 @@ def offset_verts(type, neighbor_vectors, neighbor_vectors_a, neighbor_vectors_b,
     return outline, corner_artifacts
 
 
-def get_outline(type, verts, lay_num, n):
-    fdir = type.mesh.fab_directions[n]
+def get_outline(joint_type, verts, lay_num, n):
+    fdir = joint_type.mesh.fab_directions[n]
     outline = []
     for rv in verts:
         ind = rv.ind.copy()
-        ind.insert(type.sax, (type.dim - 1) * (1 - fdir) + (2 * fdir - 1) * lay_num)
+        ind.insert(joint_type.sax, (joint_type.dim - 1) * (1 - fdir) + (2 * fdir - 1) * lay_num)
         add = [0, 0, 0]
-        add[type.sax] = 1 - fdir
-        i_pt = get_index(ind, add, type.dim)
-        pt = get_vertex(i_pt, type.jverts[n], type.vertex_no_info)
+        add[joint_type.sax] = 1 - fdir
+        i_pt = get_index(ind, add, joint_type.dim)
+        pt = get_vertex(i_pt, joint_type.jverts[n], joint_type.vertex_no_info)
         outline.append(MillVertex(pt))
     return outline
 
@@ -1064,20 +1083,20 @@ def get_vertex(index, verts, n):
     return np.array([x, y, z])
 
 
-def get_milling_end_points(type, n, last_z):
+def get_milling_end_points(joint_type, n, last_z):
     verts = []
     mverts = []
 
     r = g = b = tx = ty = 0.0
 
-    fdir = type.mesh.fab_directions[n]
+    fdir = joint_type.mesh.fab_directions[n]
 
     origin_vert = [0, 0, 0]
-    origin_vert[type.sax] = last_z
+    origin_vert[joint_type.sax] = last_z
 
-    extra_zheight = 15 / type.ratio
+    extra_zheight = 15 / joint_type.ratio
     above_origin_vert = [0, 0, 0]
-    above_origin_vert[type.sax] = last_z - (2 * fdir - 1) * extra_zheight
+    above_origin_vert[joint_type.sax] = last_z - (2 * fdir - 1) * extra_zheight
 
     mverts.append(MillVertex(origin_vert, is_tra=True))
     mverts.append(MillVertex(above_origin_vert, is_tra=True))
@@ -1109,23 +1128,24 @@ def get_segment_proportions(outline):
     return sprops
 
 
-def get_layered_vertices(type, outline, n, lay_num, no_z, dep):
+def get_layered_vertices(joint_type, outline, n, lay_num, no_z, dep):
     verts = []
     mverts = []
 
     r = g = b = tx = ty = 0.0
 
-    fdir = type.mesh.fab_directions[n]
+    fdir = joint_type.mesh.fab_directions[n]
+
     # add startpoint
     start_vert = [outline[0].x, outline[0].y, outline[0].z]
-    safe_height = outline[0].pt[type.sax] - (2 * fdir - 1) * (lay_num * type.voxel_sizes[type.sax] + 2 * dep)
-    start_vert[type.sax] = safe_height
+    safe_height = outline[0].pt[joint_type.sax] - (2 * fdir - 1) * (lay_num * joint_type.voxel_sizes[joint_type.sax] + 2 * dep)
+    start_vert[joint_type.sax] = safe_height
     mverts.append(MillVertex(start_vert, is_tra=True))
     verts.extend([start_vert[0], start_vert[1], start_vert[2], r, g, b, tx, ty])
     if lay_num != 0:
         start_vert2 = [outline[0].x, outline[0].y, outline[0].z]
-        safe_height2 = outline[0].pt[type.sax] - (2 * fdir - 1) * dep
-        start_vert2[type.sax] = safe_height2
+        safe_height2 = outline[0].pt[joint_type.sax] - (2 * fdir - 1) * dep
+        start_vert2[joint_type.sax] = safe_height2
         mverts.append(MillVertex(start_vert2, is_tra=True))
         verts.extend([start_vert2[0], start_vert2[1], start_vert2[2], r, g, b, tx, ty])
 
@@ -1135,12 +1155,13 @@ def get_layered_vertices(type, outline, n, lay_num, no_z, dep):
         stn = 0
     else:
         stn = 1
+
     # set end number (one layer more if last layer and not sliding direction aligned component)
-    if lay_num == type.dim - 1 and type.sax != type.fixed.sides[n][0].ax:
+    if lay_num == joint_type.dim - 1 and joint_type.sax != joint_type.fixed.sides[n][0].ax:
         enn = no_z + 2
     else:
         enn = no_z + 1
-    if type.incremental:
+    if joint_type.incremental:
         enn += 1
         seg_props = get_segment_proportions(outline)
     else:
@@ -1148,13 +1169,13 @@ def get_layered_vertices(type, outline, n, lay_num, no_z, dep):
     # calculate depth for incremental setting
 
     for num in range(stn, enn):
-        if type.incremental and num == enn - 1: seg_props = [0.0] * len(outline)
+        if joint_type.incremental and num == enn - 1: seg_props = [0.0] * len(outline)
         for i, (mv, sp) in enumerate(zip(outline, seg_props)):
             pt = [mv.x, mv.y, mv.z]
-            pt[type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
+            pt[joint_type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
             if mv.is_arc:
                 ctr = [mv.arc_ctr[0], mv.arc_ctr[1], mv.arc_ctr[2]]
-                ctr[type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
+                ctr[joint_type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
                 mverts.append(MillVertex(pt, is_arc=True, arc_ctr=ctr))
             else:
                 mverts.append(MillVertex(pt))
@@ -1162,10 +1183,10 @@ def get_layered_vertices(type, outline, n, lay_num, no_z, dep):
                 pmv = outline[i - 1]
             if i > 0 and is_connected_arc(mv, pmv):
                 ppt = [pmv.x, pmv.y, pmv.z]
-                ppt[type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
+                ppt[joint_type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
                 pctr = [pmv.arc_ctr[0], pmv.arc_ctr[1], pmv.arc_ctr[2]]
-                pctr[type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
-                arc_pts = arc_points(ppt, pt, pctr, ctr, type.sax, math.radians(5))
+                pctr[joint_type.sax] += (2 * fdir - 1) * (num - 1 + sp) * dep
+                arc_pts = arc_points(ppt, pt, pctr, ctr, joint_type.sax, math.radians(5))
                 for arc_pt in arc_pts: verts.extend([arc_pt[0], arc_pt[1], arc_pt[2], r, g, b, tx, ty])
             else:
                 verts.extend([pt[0], pt[1], pt[2], r, g, b, tx, ty])
@@ -1173,7 +1194,7 @@ def get_layered_vertices(type, outline, n, lay_num, no_z, dep):
 
     # add endpoint
     end_vert = [outline[0].x, outline[0].y, outline[0].z]
-    end_vert[type.sax] = safe_height
+    end_vert[joint_type.sax] = safe_height
     mverts.append(MillVertex(end_vert, is_tra=True))
     verts.extend([end_vert[0], end_vert[1], end_vert[2], r, g, b, tx, ty])
 
@@ -1181,7 +1202,8 @@ def get_layered_vertices(type, outline, n, lay_num, no_z, dep):
 
 
 def any_minus_one_neighbor(ind, lay_mat):
-    bool = False
+    # TODO: what is this flag exactly?
+    flag = False
     for add0 in range(-1, 1, 1):
         temp = []
         temp2 = []
@@ -1192,15 +1214,12 @@ def any_minus_one_neighbor(ind, lay_mat):
             if np.all(np.array(nind) >= 0) and nind[0] < lay_mat.shape[0] and nind[1] < lay_mat.shape[1]:
                 # If the value is -1
                 if lay_mat[tuple(nind)] == -1:
-                    bool = True
+                    flag = True
                     break
-    return bool
+    return flag
 
 
 def get_neighbors_in_out(ind, reg_inds, lay_mat, org_lay_mat, n):
-    # 0 = in region
-    # 1 = outside region, block
-    # 2 = outside region, free
     in_out = []
     values = []
     for add0 in range(-1, 1, 1):
@@ -1212,28 +1231,28 @@ def get_neighbors_in_out(ind, reg_inds, lay_mat, org_lay_mat, n):
             nind = [ind[0] + add0, ind[1] + add1]
 
             # FIND TYPE
-            type = -1
+            neighbor_type = -1
             val = None
             # Check if this index is in the list of region-included indices
             for rind in reg_inds:
                 if rind[0] == nind[0] and rind[1] == nind[1]:
-                    type = 0  # in region
+                    neighbor_type = 0  # in region
                     break
-            if type != 0:
+            if neighbor_type != 0:
                 # If there are out of bound indices they are free
                 if np.any(np.array(nind) < 0) or nind[0] >= lay_mat.shape[0] or nind[1] >= lay_mat.shape[1]:
-                    type = 2  # free
+                    neighbor_type = 2  # free
                     val = -1
                 elif lay_mat[tuple(nind)] < 0:
-                    type = 2  # free
+                    neighbor_type = 2  # free
                     val = -2
                 else:
-                    type = 1  # blocked
+                    neighbor_type = 1  # blocked
 
             if val == None:
                 val = org_lay_mat[tuple(nind)]
 
-            temp.append(type)
+            temp.append(neighbor_type)
             temp2.append(val)
         in_out.append(temp)
         values.append(temp2)
@@ -1350,7 +1369,7 @@ def milling_path_vertices(type, n):
                 vertices.extend(verts)
                 milling_vertices.extend(mverts)
 
-            # Anaylize which voxels needs to be roguhly cut initially
+            # Anaylize which voxels needs to be roughly cut initially
             # 1. Add all open voxels in the region
             rough_inds = []
             for ind in reg_inds:
@@ -1410,5 +1429,3 @@ def milling_path_vertices(type, n):
     vertices = np.array(vertices, dtype=np.float32)
 
     return vertices, milling_vertices
-
-
