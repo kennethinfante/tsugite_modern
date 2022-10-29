@@ -19,17 +19,17 @@ class JointType:
                  fs=[],
                  sax=2,
                  dim=3,
-                 ang=0.0,
+                 angle=0.0,
                  td=[44.0, 44.0, 44.0],
-                 fspe=400,
-                 fspi=6000,
-                 fabtol=0.15,
-                 fabdia=6.00,
+                 fab_speed=400,
+                 spindle_speed=6000,
+                 tolerances=0.15,
+                 bit_diameter=6.00,
                  align_ax=0,
-                 fabext="gcode",
+                 fab_ext="gcode",
                  incremental=False,
                  hfs=[],
-                 finterp=True):
+                 arc_interp=True):
         self.parent = parent
         self.sax = sax
         self.fixed = FixedSides(self)
@@ -41,10 +41,10 @@ class JointType:
         self.component_length = 0.5 * self.component_size
         self.ratio = np.average(self.real_tim_dims) / self.component_size
         self.voxel_sizes = np.copy(self.real_tim_dims) / (self.ratio * self.dim)
-        self.fab = Fabrication(self, tolerances=fabtol, bit_diameter=fabdia, fab_ext=fabext, align_ax=align_ax, arc_interp=finterp, spindle_speed=fspi,
-                               milling_speed=fspe)
+        self.fab = Fabrication(self, tolerances=tolerances, bit_diameter=bit_diameter, fab_ext=fab_ext, align_ax=align_ax, arc_interp=arc_interp, spindle_speed=spindle_speed,
+                               fab_speed=fab_speed)
         self.vertex_no_info = 8
-        self.ang = ang
+        self.ang = angle
         self.buff = Buffer(self)  # initiating the buffer
         self.fixed.update_unblocked()
         self.vertices = self.create_and_buffer_vertices(milling_path=False)  # create and buffer vertices
@@ -271,7 +271,7 @@ class JointType:
         self.fab.vdia = self.fab.diameter / self.ratio
         self.fab.vrad = self.fab.radius / self.ratio
         self.fab.vtol = self.fab.tolerances / self.ratio
-        self.fab.milling_speed = fspe
+        self.fab.fab_speed = fspe
         self.fab.spindle_speed = fspi
         self.fab.extra_rot_deg = fabrot
         self.fab.fab_ext = fabext
@@ -329,8 +329,8 @@ class JointType:
         TDZ: timber timension in z-axis (mm) (TDX, TDY, and TDZ does not have to be equal. Refer for Figure 27b of the paper)
         DIA: diameter of the milling bit
         TOL: tolerance
-        SPE: milling_speed of the milling bit
-        SPI: spindle milling_speed
+        SPE: fab_speed of the milling bit
+        SPI: spindle fab_speed
         INC: incremental            (T/F)   Option for the layering of the milling path to avoid "downcuts"
         FIN: interpolation of arcs  (T/F)   Milling path true arcs or divided into many points (depending on milling machine)
         ALN: align                          Axis to align the timber element with during fabrication
@@ -352,7 +352,7 @@ class JointType:
         file.write("TDZ " + str(self.real_tim_dims[2]) + "\n")
         file.write("DIA " + str(self.fab.real_dia) + "\n")
         file.write("TOL " + str(self.fab.tolerances) + "\n")
-        file.write("SPE " + str(self.fab.milling_speed) + "\n")
+        file.write("SPE " + str(self.fab.fab_speed) + "\n")
         file.write("SPI " + str(self.fab.spindle_speed) + "\n")
         file.write("INC " + str(self.incremental) + "\n")
         file.write("FIN " + str(self.fab.arc_interp) + "\n")
@@ -395,7 +395,7 @@ class JointType:
         dx, dy, dz = self.real_tim_dims
         dia = self.fab.real_dia
         tol = self.fab.tolerances
-        spe = self.fab.milling_speed
+        spe = self.fab.fab_speed
         spi = self.fab.spindle_speed
         inc = self.incremental
         aln = self.fab.align_ax
@@ -579,7 +579,7 @@ def pad_layer_mat_with_fixed_sides(mat, joint_type: JointType, n):
             pad_loc[oax][oside.dir] = 1
             pad_val[oax][oside.dir] = n2
     # If it is an angled joint, pad so that the edge of a joint located on an edge will be trimmed well
-    # if abs(joint_type.ang-90)>1 and len(joint_type.fixed.sides[n])==1 and joint_type.fixed.sides[n][0].ax!=joint_type.sax:
+    # if abs(joint_type.angle-90)>1 and len(joint_type.fixed.sides[n])==1 and joint_type.fixed.sides[n][0].ax!=joint_type.sax:
     #    print("get here")
     #    ax = joint_type.fixed.sides[n][0].ax
     #    dir = joint_type.fixed.sides[n][0].dir

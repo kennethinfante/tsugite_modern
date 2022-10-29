@@ -17,7 +17,7 @@ class MillVertex:
         self.z = pt[2]
         self.is_arc = is_arc
         self.arc_ctr = np.array(arc_ctr)
-        self.is_tra = is_tra  # is traversing, gcode_mode G0 (max milling_speed) (otherwise G1)
+        self.is_tra = is_tra  # is traversing, gcode_mode G0 (max fab_speed) (otherwise G1)
 
     def scale_and_swap(self, ax, direction: Direction, ratio, real_tim_dims, coords: list[int], d: int) -> None:
         # sawp
@@ -174,7 +174,7 @@ class Fabrication:
                  fab_ext: FabricationExt = "gcode",
                  align_ax: int = 0,
                  arc_interp: bool = True,
-                 milling_speed: int = 400,
+                 fab_speed: int = 400,
                  spindle_speed: int = 6000) -> None:
         self.parent = parent
         self.real_dia = bit_diameter  # milling bit radius in mm
@@ -190,7 +190,7 @@ class Fabrication:
         self.align_ax = align_ax
         self.fab_ext = fab_ext
         self.arc_interp = arc_interp
-        self.milling_speed = milling_speed
+        self.fab_speed = fab_speed
         self.spindle_speed = spindle_speed
 
     def export_gcode(self, filename_tsu: FilePath = os.getcwd() + os.sep + "joint.tsu") -> None:
@@ -229,7 +229,7 @@ class Fabrication:
                 file.write("S" + spistr + " (Spindle " + spistr + "rpm)\n")
                 file.write("M3 (spindle start)\n")
                 file.write("G54\n")
-                spestr = str(int(self.milling_speed))
+                spestr = str(int(self.fab_speed))
                 file.write("F" + spestr + " (Feed " + spestr + "mm/min)\n")
             elif self.fab_ext == "sbp":
                 file.write("'%\n")
