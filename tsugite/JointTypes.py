@@ -49,11 +49,11 @@ class JointType:
         self.fixed.update_unblocked()
         self.vertices = self.create_and_buffer_vertices(milling_path=False)  # create and buffer vertices
         self.mesh = Geometries(self, hfs=hfs)
-        self.sugs = []
-        self.gals = []
+        self.suggestions = []
+        self.gallery_figures = []
         self.update_suggestions()
         self.combine_and_buffer_indices()
-        self.gallary_start_index = -20
+        self.gallery_start_index = -20
         self.incremental = incremental
 
     def create_and_buffer_vertices(self, milling_path=False):
@@ -172,20 +172,20 @@ class JointType:
         self.update_suggestions()
         self.mesh.create_indices(milling_path=milling_path)
         glo_off = len(self.mesh.indices)  # global offset
-        for i in range(len(self.sugs)):
-            self.sugs[i].create_indices(glo_off=glo_off, milling_path=False)
-            glo_off += len(self.sugs[i].indices)
-        for i in range(len(self.gals)):
-            self.gals[i].create_indices(glo_off=glo_off, milling_path=False)
-            glo_off += len(self.gals[i].indices)
+        for i in range(len(self.suggestions)):
+            self.suggestions[i].create_indices(glo_off=glo_off, milling_path=False)
+            glo_off += len(self.suggestions[i].indices)
+        for i in range(len(self.gallery_figures)):
+            self.gallery_figures[i].create_indices(glo_off=glo_off, milling_path=False)
+            glo_off += len(self.gallery_figures[i].indices)
         indices = []
         indices.extend(self.mesh.indices)
-        for mesh in self.sugs: indices.extend(mesh.indices)
-        for mesh in self.gals: indices.extend(mesh.indices)
+        for mesh in self.suggestions: indices.extend(mesh.indices)
+        for mesh in self.gallery_figures: indices.extend(mesh.indices)
         self.indices = np.array(indices, dtype=np.uint32)
         Buffer.buffer_indices(self.buff)
 
-    def update_sliding_direction(self, sax):
+    def update_sliding_direction(self, sax) -> tuple[bool, str]:
         blocked = False
         for i, sides in enumerate(self.fixed.sides):
             for side in sides:
@@ -200,7 +200,7 @@ class JointType:
             self.fixed.update_unblocked()
             self.create_and_buffer_vertices(milling_path=False)
             self.mesh.voxel_matrix_from_height_fields()
-            for mesh in self.sugs: mesh.voxel_matrix_from_height_fields()
+            for mesh in self.suggestions: mesh.voxel_matrix_from_height_fields()
             self.combine_and_buffer_indices()
             return True, ''
 
@@ -284,17 +284,19 @@ class JointType:
         self.combine_and_buffer_indices()
 
     def update_suggestions(self):
-        self.sugs = []  # clear list of suggestions
+        self.suggestions = []  # clear list of suggestions
         if self.suggestions_on:
             sugg_hfs = []
             if not self.mesh.eval.valid:
                 sugg_hfs = produce_suggestions(self, self.mesh.height_fields)
-                for i in range(len(sugg_hfs)): self.sugs.append(Geometries(self, mainmesh=False, hfs=sugg_hfs[i]))
+                for i in range(len(sugg_hfs)): self.suggestions.append(Geometries(self, mainmesh=False, hfs=sugg_hfs[i]))
 
     def init_gallery(self, start_index):
-        self.gallary_start_index = start_index
-        self.gals = []
-        self.sugs = []
+        self.gallery_start_index = start_index
+        # do not reset again cause they are already in the init
+        # self.gallery_figures = []
+        # self.suggestions = []
+
         # Folder
         location = os.path.abspath(os.getcwd())
         location = location.split(os.sep)
@@ -312,7 +314,7 @@ class JointType:
             if (i + start_index) > maxi: break
             try:
                 hfs = np.load(location + os.sep + "height_fields_" + str(start_index + i) + ".npy")
-                self.gals.append(Geometries(self, mainmesh=False, hfs=hfs))
+                self.gallery_figures.append(Geometries(self, mainmesh=False, hfs=hfs))
             except:
                 abc = 0
 

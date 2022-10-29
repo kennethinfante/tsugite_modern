@@ -21,7 +21,8 @@ from Show import Show
 
 
 class GLWidget(QGLWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *__args):
+        super().__init__(*__args)
         self.parent = parent
         QGLWidget.__init__(self, parent)
         # self.setMinimumSize(800, 800)
@@ -53,11 +54,14 @@ class GLWidget(QGLWidget):
             ext = "nc"
         elif self.parent.findChild(QRadioButton, "radioSBP").isChecked():
             ext = "sbp"
+        else:
+            ext = "gcode"
 
         self.type = JointType(self, fs=[[[2, 0]], [[2, 1]]], sax=sax, dim=dim, angle=ang, td=[dx, dy, dz],
                               tolerances=tol, bit_diameter=dia,
                               fab_speed=spe, spindle_speed=spi, fab_ext=ext, align_ax=aax, incremental=inc,
                               arc_interp=fin)
+
         self.show = Show(self, self.type)
 
     def resizeGL(self, w, h):
@@ -123,7 +127,7 @@ class GLWidget(QGLWidget):
 
         if self.type.mesh.select.suggstate >= 0:
             index = self.type.mesh.select.suggstate
-            if len(self.type.sugs) > index: self.show.difference_suggestion(index)
+            if len(self.type.suggestions) > index: self.show.difference_suggestion(index)
 
         # Display editing in action
         self.show.selected()
@@ -134,9 +138,9 @@ class GLWidget(QGLWidget):
 
         # Suggestions
         if self.show.view.show_suggestions:
-            for i in range(len(self.type.sugs)):
-                hquater = self.height / 4
-                wquater = self.width / 5
+            for i in range(len(self.type.suggestions)):
+                # hquater = self.height / 4
+                # wquater = self.width / 5
                 glViewport(self.width - self.wstep, self.height - self.hstep * (i + 1), self.wstep, self.hstep)
                 glLoadIdentity()
                 if i == self.type.mesh.select.suggstate:
@@ -146,7 +150,7 @@ class GLWidget(QGLWidget):
                     glClearColor(0.9, 0.9, 0.9, 1.0)  # light grey
                     glClear(GL_COLOR_BUFFER_BIT)
                     glDisable(GL_SCISSOR_TEST)
-                self.show.joint_geometry(mesh=self.type.sugs[i], lw=2, hidden=False)
+                self.show.joint_geometry(mesh=self.type.suggestions[i], lw=2, hidden=False)
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
@@ -161,19 +165,19 @@ class GLWidget(QGLWidget):
             # SUGGESTION PICK
             elif self.type.mesh.select.suggstate >= 0:
                 index = self.type.mesh.select.suggstate
-                if len(self.type.sugs) > index:
-                    self.type.mesh = Geometries(self.type, hfs=self.type.sugs[index].height_fields)
-                    self.type.sugs = []
+                if len(self.type.suggestions) > index:
+                    self.type.mesh = Geometries(self.type, hfs=self.type.suggestions[index].height_fields)
+                    self.type.suggestions = []
                     self.type.combine_and_buffer_indices()
                     self.type.mesh.select.suggstate = -1
             # GALLERY PICK -- not implemented currently
             # elif joint_type.mesh.select.gallstate>=0:
             #    index = joint_type.mesh.select.gallstate
-            #    if index<len(joint_type.gals):
-            #        joint_type.mesh = Geometries(joint_type,hfs=joint_type.gals[index].height_fields)
-            #        joint_type.gals = []
+            #    if index<len(joint_type.gallery_figures):
+            #        joint_type.mesh = Geometries(joint_type,hfs=joint_type.gallery_figures[index].height_fields)
+            #        joint_type.gallery_figures = []
             #        view_opt.gallery=False
-            #        joint_type.gallary_start_index = -20
+            #        joint_type.gallery_start_index = -20
             #        joint_type.combine_and_buffer_indices()
             else:
                 self.click_time = time.time()

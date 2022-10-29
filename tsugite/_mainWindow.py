@@ -100,15 +100,15 @@ class mainWindow(QMainWindow):
 
     @pyqtSlot()
     def set_feedback_view(self):
-        bool = self.findChild(QCheckBox, "checkFEED").checkState()
-        self.glWidget.show.view.show_feedback = bool
+        feedback_shown = self.findChild(QCheckBox, "checkFEED").checkState()
+        self.glWidget.show.view.show_feedback = feedback_shown
 
     @pyqtSlot()
     def change_sliding_axis(self):
         ax = self.findChild(QComboBox, "comboSLIDE").currentIndex()
-        bool, msg = self.glWidget.type.update_sliding_direction(ax)
+        # the boolean component is not used
+        _, msg = self.glWidget.type.update_sliding_direction(ax)
         print("msg")
-        # QMessageBox = ...
 
     @pyqtSlot()
     def change_number_of_timbers(self):
@@ -244,18 +244,18 @@ class mainWindow(QMainWindow):
 
     @pyqtSlot()
     def set_gcode_as_standard(self):
-        bool = self.findChild(QRadioButton, "radioGCODE").isChecked()
-        if bool: self.glWidget.type.fab.fab_ext = "gcode"
+        use_gcode = self.findChild(QRadioButton, "radioGCODE").isChecked()
+        if use_gcode: self.glWidget.type.fab.fab_ext = "gcode"
 
     @pyqtSlot()
     def set_nccode_as_standard(self):
-        bool = self.findChild(QRadioButton, "radioNC").isChecked()
-        if bool: self.glWidget.type.fab.fab_ext = "nc"
+        use_nc = self.findChild(QRadioButton, "radioNC").isChecked()
+        if use_nc: self.glWidget.type.fab.fab_ext = "nc"
 
     @pyqtSlot()
     def set_sbp_as_standard(self):
-        bool = self.findChild(QRadioButton, "radioSBP").isChecked()
-        if bool: self.glWidget.type.fab.fab_ext = "sbp"
+        use_sbp = self.findChild(QRadioButton, "radioSBP").isChecked()
+        if use_sbp: self.glWidget.type.fab.fab_ext = "sbp"
 
     @pyqtSlot()
     def new_file(self):
@@ -296,8 +296,8 @@ class mainWindow(QMainWindow):
     def show_hide_timbers(self):
         names = ["A", "B", "C", "D"]
         for i, item in enumerate(names):
-            bool = self.findChild(QAction, "action" + names[i]).isChecked()
-            self.glWidget.show.view.hidden[i] = not bool
+            timber_is_checked = self.findChild(QAction, "action" + names[i]).isChecked()
+            self.glWidget.show.view.hidden[i] = not timber_is_checked
 
     @pyqtSlot()
     def show_all_timbers(self):
@@ -360,7 +360,7 @@ class mainWindow(QMainWindow):
 
 class MovieSplashScreen(QSplashScreen):
 
-    def __init__(self, movie, parent=None):
+    def __init__(self, movie):
         movie.jumpToFrame(0)
         pixmap = QPixmap(movie.frameRect().size())
 

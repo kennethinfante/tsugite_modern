@@ -315,7 +315,7 @@ class Show:
         # draw faces of additional part
         # glUniform3f(5, 1.0, 1.0, 1.0) # white
         # for n in range(self.joint_type.noc):
-        #    G0 = [self.joint_type.sugs[index].indices_fall[n]]
+        #    G0 = [self.joint_type.suggestions[index].indices_fall[n]]
         #    G1 = self.joint_type.mesh.indices_fall
         #    self.draw_geometries_with_excluded_area(G0,G1)
 
@@ -323,7 +323,7 @@ class Show:
         # glUniform3f(5, 1.0, 0.5, 0.5) # pink/red
         # for n in range(self.joint_type.noc):
         #    G0 = [self.joint_type.mesh.indices_fall[n]]
-        #    G1 = self.joint_type.sugs[index].indices_fall
+        #    G1 = self.joint_type.suggestions[index].indices_fall
         #    self.draw_geometries_with_excluded_area(G0,G1)
 
         # draw outlines
@@ -332,8 +332,8 @@ class Show:
         glEnable(GL_LINE_STIPPLE)
         glLineStipple(2, 0xAAAA)
         for n in range(self.joint_type.noc):
-            G0 = [self.joint_type.sugs[index].indices_lns[n]]
-            G1 = self.joint_type.sugs[index].indices_fall
+            G0 = [self.joint_type.suggestions[index].indices_lns[n]]
+            G1 = self.joint_type.suggestions[index].indices_fall
             self.draw_geometries_with_excluded_area(G0, G1)
         glPopAttrib()
 
