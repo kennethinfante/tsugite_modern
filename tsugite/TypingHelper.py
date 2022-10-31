@@ -12,7 +12,7 @@ DotProduct = ArrayLike         # Returns the dot product of a and b. If both are
 FilePath = str
 FabricationExt = str          # either "gcode", "nc", "sbp"
 DrawTypes = glConstant        # GL_QUADS, GL_LINES, GL_TRIANGLES, GL_LINE_STRIP
-Direction = int               # 1 for positive, 0 for negative direction
+Direction = int               # 1 for positive, 0 for negative direction, 1 for bottom, 0 for top, in other cases it is -1 and 1
 
 HoveringState = int           # -1: nothing, 0: hovering first, 1: hovering second, and so on. Application to Suggestions and Gallery
 TimberState = int             # -1: nothing, 0: hovered, 1: adding, 2: pulling, 10: timber hovered, 12: timber pulled

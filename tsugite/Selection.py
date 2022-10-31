@@ -43,13 +43,13 @@ def get_same_height_neighbors(hfield: list, inds: list) -> list:
     return new_inds
 
 
-# noinspection PyAttributeOutsideInit
+# noinspection PyAttributeOutsideInit,PyChainedComparisons
 class Selection:
-    def __init__(self, parent) -> None:
+    def __init__(self, geom) -> None:
         self.state: TimberState = -1
         self.suggestions_state: HoveringState = -1
         self.gallery_state: HoveringState = -1
-        self.parent = parent
+        self.geom = geom
         self.n = self.x = self.y = None
         self.refresh = False
         self.shift = False
@@ -64,7 +64,7 @@ class Selection:
         self.direction = direction
         if self.x is not None and self.y is not None:
             if self.shift:
-                self.faces = get_same_height_neighbors(self.parent.height_fields[n - direction],
+                self.faces = get_same_height_neighbors(self.geom.height_fields[n - direction],
                                                        [np.array([self.x, self.y])])
             else:
                 self.faces = [np.array([self.x, self.y])]
@@ -73,11 +73,11 @@ class Selection:
     def start_pull(self, mouse_pos) -> None:
         self.state = 2
         self.start_pos = np.array([mouse_pos[0], -mouse_pos[1]])
-        self.start_height = self.parent.height_fields[self.n - self.direction][self.x][self.y]
-        self.parent.parent.combine_and_buffer_indices()  # for selection area
+        self.start_height = self.geom.height_fields[self.n - self.direction][self.x][self.y]
+        self.geom.joint_type.combine_and_buffer_indices()  # for selection area
 
     def end_pull(self) -> None:
-        if self.val != 0: self.parent.edit_height_fields(self.faces, self.current_height, self.n, self.direction)
+        if self.val != 0: self.geom.edit_height_fields(self.faces, self.current_height, self.n, self.direction)
         self.state = -1
         self.refresh = True
 
@@ -93,7 +93,7 @@ class Selection:
 
         ## Sliding direction vector
         # sdir_vec = [0, 0, 0]
-        sdir_vec = np.copy(self.parent.parent.pos_vecs[self.parent.parent.sax])
+        sdir_vec = np.copy(self.geom.joint_type.pos_vecs[self.geom.joint_type.sax])
         rot_x = pyrr.Matrix33.from_x_rotation(screen_xrot)
         rot_y = pyrr.Matrix33.from_y_rotation(screen_yrot)
         sdir_vec = np.dot(sdir_vec, rot_x * rot_y)
@@ -103,8 +103,8 @@ class Selection:
         cosang = np.dot(mouse_vec, sdir_vec)  # Negative / positive depending on direction
         val = int(linalg.norm(mouse_vec) / linalg.norm(sdir_vec) + 0.5)
         if cosang is not None and cosang < 0: val = -val
-        if self.start_height + val > self.parent.parent.dim:
-            val = self.parent.parent.dim - self.start_height
+        if self.start_height + val > self.geom.joint_type.dim:
+            val = self.geom.joint_type.dim - self.start_height
         elif self.start_height + val < 0:
             val = -self.start_height
         self.current_height = self.start_height + val
@@ -113,21 +113,21 @@ class Selection:
     def start_move(self, mouse_pos: list[int, int], h: int = 1600) -> None:
         self.state = 12
         self.start_pos = np.array([mouse_pos[0], h - mouse_pos[1]])
-        self.new_fixed_sides = self.parent.parent.fixed.sides[self.n]
-        self.new_fixed_sides_for_display = self.parent.parent.fixed.sides[self.n]
-        self.parent.parent.combine_and_buffer_indices  # for move preview outline
+        self.new_fixed_sides = self.geom.joint_type.fixed.sides[self.n]
+        self.new_fixed_sides_for_display = self.geom.joint_type.fixed.sides[self.n]
+        self.geom.joint_type.combine_and_buffer_indices()  # for move preview outline
 
     def end_move(self) -> None:
-        self.parent.parent.update_component_position(self.new_fixed_sides, self.n)
+        self.geom.joint_type.update_component_position(self.new_fixed_sides, self.n)
         self.state = -1
         self.new_fixed_sides_for_display = None
 
     def move(self, mouse_pos: list[int, int], screen_xrot, screen_yrot, w: int = 1600, h: int = 1600) \
             -> None:  # actually move OR rotate
-        sax = self.parent.parent.sax
-        noc = self.parent.parent.noc
-        self.new_fixed_sides = copy.deepcopy(self.parent.parent.fixed.sides[self.n])
-        self.new_fixed_sides_for_display = copy.deepcopy(self.parent.parent.fixed.sides[self.n])
+        sax = self.geom.joint_type.sax
+        noc = self.geom.joint_type.noc
+        self.new_fixed_sides = copy.deepcopy(self.geom.joint_type.fixed.sides[self.n])
+        self.new_fixed_sides_for_display = copy.deepcopy(self.geom.joint_type.fixed.sides[self.n])
         self.current_pos = np.array([mouse_pos[0], h - mouse_pos[1]])
         ## Mouse vector
         mouse_vec = np.array(self.current_pos - self.start_pos)
@@ -138,10 +138,10 @@ class Selection:
         move_dist = linalg.norm(mouse_vec)
         if move_dist > 0.01:
             ## Get component direction vector
-            comp_ax = self.parent.parent.fixed.sides[self.n][0].ax  # component axis
-            comp_dir = self.parent.parent.fixed.sides[self.n][0].direction
-            comp_len = 2.5 * (2 * comp_dir - 1) * self.parent.parent.component_size
-            comp_vec = comp_len * unitize(self.parent.parent.pos_vecs[comp_ax])
+            comp_ax = self.geom.joint_type.fixed.sides[self.n][0].ax  # component axis
+            comp_dir = self.geom.joint_type.fixed.sides[self.n][0].direction
+            comp_len = 2.5 * (2 * comp_dir - 1) * self.geom.joint_type.component_size
+            comp_vec = comp_len * unitize(self.geom.joint_type.pos_vecs[comp_ax])
             ## Flatten vector to screen
             rot_x = pyrr.Matrix33.from_x_rotation(screen_xrot)
             rot_y = pyrr.Matrix33.from_y_rotation(screen_yrot)
@@ -177,13 +177,13 @@ class Selection:
                 lax.remove(oax)
                 lax = lax[0]
                 screen_dir = 1
-                screen_vec = self.parent.parent.pos_vecs[lax]
+                screen_vec = self.geom.joint_type.pos_vecs[lax]
                 screen_vec = np.dot(screen_vec, rot_x * rot_y)
                 if screen_vec[2] < 0: screen_dir = -1
                 ###
                 self.new_fixed_sides_for_display = []
-                for i in range(len(self.parent.parent.fixed.sides[self.n])):
-                    ndir = self.parent.parent.fixed.sides[self.n][i].direction
+                for i in range(len(self.geom.joint_type.fixed.sides[self.n])):
+                    ndir = self.geom.joint_type.fixed.sides[self.n][i].direction
                     ordered = False
                     if comp_ax < oax and oax - comp_ax == 1:
                         ordered = True
@@ -196,9 +196,9 @@ class Selection:
                     self.new_fixed_sides_for_display.append(side)
                     if side.ax == sax and side.direction == 0 and self.n != 0: blocked = True; break
                     if side.ax == sax and side.direction == 1 and self.n != noc - 1: blocked = True; break
-            else:  # Timber moveing mode
+            else:  # Timber moving mode
                 length_ratio = linalg.norm(mouse_vec) / linalg.norm(comp_vec)
-                side_num = len(self.parent.parent.fixed.sides[self.n])
+                side_num = len(self.geom.joint_type.fixed.sides[self.n])
                 if side_num == 1 and absang > 135:  # currently L
                     if length_ratio < 0.5:  # moved just a bit, L to T
                         self.new_fixed_sides_for_display = [FixedSide(comp_ax, 0), FixedSide(comp_ax, 1)]
@@ -214,16 +214,16 @@ class Selection:
             # check if the direction is blocked
             blocked = False
             for side in self.new_fixed_sides_for_display:
-                if side.is_unique(self.parent.parent.fixed.sides[self.n]):
-                    if side.is_unique(self.parent.parent.fixed.unblocked):
+                if side.is_unique(self.geom.joint_type.fixed.sides[self.n]):
+                    if side.is_unique(self.geom.joint_type.fixed.unblocked):
                         blocked = True
             if blocked:
                 all_same = True
                 for side in self.new_fixed_sides_for_display:
-                    if side.is_unique(self.parent.parent.fixed.sides[self.n]):
+                    if side.is_unique(self.geom.joint_type.fixed.sides[self.n]):
                         all_same = False
                 if all_same: blocked = False
             if not blocked: self.new_fixed_sides = self.new_fixed_sides_for_display
-        if not np.equal(self.parent.parent.fixed.sides[self.n], np.array(self.new_fixed_sides_for_display)).all():
+        if not np.equal(self.geom.joint_type.fixed.sides[self.n], np.array(self.new_fixed_sides_for_display)).all():
             # for move/rotate preview outline # can't you show this by transformation instead?
-            self.parent.parent.combine_and_buffer_indices()
+            self.geom.joint_type.combine_and_buffer_indices()

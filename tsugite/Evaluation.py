@@ -5,6 +5,7 @@ from Fabrication import RegionVertex
 from Misc import FixedSide, FixedSides
 
 
+# noinspection PyTypeChecker
 def get_ordered_outline(vertices: list[RegionVertex]):
     ordered_vertices = []
 
@@ -78,9 +79,9 @@ def get_friction_and_contact_areas(mat, slides, fixed_sides, n) -> tuple[int, li
         indices = np.argwhere(mat == n)
         for ind in indices:
             for ax in range(3):
-                for dir in range(2):
+                for direction in range(2):
                     nind = ind.copy()
-                    nind[ax] += 2 * dir - 1
+                    nind[ax] += 2 * direction - 1
                     cont = False
                     if nind[ax] < 0:
                         if FixedSide(ax, 0).is_unique(other_fixed_sides): cont = True
@@ -91,7 +92,7 @@ def get_friction_and_contact_areas(mat, slides, fixed_sides, n) -> tuple[int, li
                     if cont:
                         contact += 1
                         find = ind.copy()
-                        find[ax] += dir
+                        find[ax] += direction
                         cfaces.append([ax, list(find)])
                         if ax in friction_axes:
                             friction += 1
@@ -145,13 +146,13 @@ def get_sliding_directions(mat: ArrayLike, noc: ArrayLike) -> tuple[ArrayLike, A
         for ax in range(3):  # Browse the three possible sliding axes
             oax = [0, 1, 2]
             oax.remove(ax)
-            for dir in range(2):  # Browse the two possible directions of the axis
+            for direction in range(2):  # Browse the two possible directions of the axis
                 slides_in_this_direction = True
                 for i in range(mat.shape[oax[0]]):
                     for j in range(mat.shape[oax[1]]):
                         first_same = False
                         for k in range(mat.shape[ax]):
-                            if dir == 0: k = mat.shape[ax] - k - 1
+                            if direction == 0: k = mat.shape[ax] - k - 1
                             ind = [i, j]
                             ind.insert(ax, k)
                             val = mat[tuple(ind)]
@@ -161,10 +162,10 @@ def get_sliding_directions(mat: ArrayLike, noc: ArrayLike) -> tuple[ArrayLike, A
                             elif first_same and val != -1:
                                 slides_in_this_direction = False
                                 break
-                        if slides_in_this_direction == False: break
-                    if slides_in_this_direction == False: break
-                if slides_in_this_direction == True:
-                    mat_sliding.append([ax, dir])
+                        if not slides_in_this_direction: break
+                    if not slides_in_this_direction: break
+                if slides_in_this_direction:
+                    mat_sliding.append([ax, direction])
         sliding_directions.append(mat_sliding)
         number_of_sliding_directions.append(len(mat_sliding))
     return sliding_directions, number_of_sliding_directions
@@ -176,13 +177,13 @@ def get_sliding_directions_of_one_timber(mat: ArrayLike, level: int) -> tuple[li
     for ax in range(3):  # Browse the three possible sliding axes
         oax = [0, 1, 2]
         oax.remove(ax)
-        for dir in range(2):  # Browse the two possible directions of the axis
+        for direction in range(2):  # Browse the two possible directions of the axis
             slides_in_this_direction = True
             for i in range(mat.shape[oax[0]]):
                 for j in range(mat.shape[oax[1]]):
                     first_same = False
                     for k in range(mat.shape[ax]):
-                        if dir == 0: k = mat.shape[ax] - k - 1
+                        if direction == 0: k = mat.shape[ax] - k - 1
                         ind = [i, j]
                         ind.insert(ax, k)
                         val = mat[tuple(ind)]
@@ -192,15 +193,16 @@ def get_sliding_directions_of_one_timber(mat: ArrayLike, level: int) -> tuple[li
                         elif first_same and val != -1:
                             slides_in_this_direction = False
                             break
-                    if slides_in_this_direction == False: break
-                if slides_in_this_direction == False: break
-            if slides_in_this_direction == True:
-                sliding_directions.append([ax, dir])
+                    if not slides_in_this_direction: break
+                if not slides_in_this_direction: break
+            if slides_in_this_direction:
+                sliding_directions.append([ax, direction])
     number_of_sliding_directions = len(sliding_directions)
     return sliding_directions, number_of_sliding_directions
 
-
-def add_fixed_sides(mat: ArrayLike, fixed_sides: FixedSides, add: int = 0) -> ArrayLike:
+# TODO: should fixed_sides be iterable?
+# noinspection PyBroadException
+def add_fixed_sides(mat: ArrayLike, fixed_sides, add: int = 0) -> ArrayLike:
     dim = len(mat)
     pad_loc = [[0, 0], [0, 0], [0, 0]]
     pad_val = [[-1, -1], [-1, -1], [-1, -1]]
@@ -255,8 +257,8 @@ def get_columns(mat: ArrayLike, ax: ArrayLike) -> list[int]:
     return columns2
 
 
-# no usage?
-def reverse_columns(cols) -> list[int]:
+# no usage? returns list[list]
+def reverse_columns(cols):
     new_cols = []
     for i in range(len(cols)):
         temp = []
@@ -266,6 +268,7 @@ def reverse_columns(cols) -> list[int]:
     return new_cols
 
 
+# noinspection PyChainedComparisons,PyBroadException
 def get_axial_neighbors(mat: ArrayLike, ind: ArrayLike, ax: ArrayLike) -> tuple[list, list[int]]:
     indices = []
     values = []
@@ -301,6 +304,7 @@ def get_all_same_connected(mat: ArrayLike, indices: ArrayLike) -> ArrayLike:
     return indices
 
 
+# noinspection PyChainedComparisons
 def get_neighbors(mat: ArrayLike, ind: ArrayLike) -> tuple[ArrayLike, ArrayLike]:
     indices = []
     values = []
@@ -316,7 +320,8 @@ def get_neighbors(mat: ArrayLike, ind: ArrayLike) -> tuple[ArrayLike, ArrayLike]
     return indices, np.array(values)
 
 
-def is_connected_to_fixed_side(indices: ArrayLike, mat: ArrayLike, fixed_sides: FixedSides) -> bool:
+# TODO: is FixedSides should be iterable
+def is_connected_to_fixed_side(indices: ArrayLike, mat: ArrayLike, fixed_sides) -> bool:
     connected = False
     val = mat[tuple(indices[0])]
     d = len(mat)
@@ -339,6 +344,7 @@ def is_connected_to_fixed_side(indices: ArrayLike, mat: ArrayLike, fixed_sides: 
     return connected
 
 
+# noinspection PyChainedComparisons
 def get_indices_of_same_neighbors(indices: ArrayLike, mat: ArrayLike) -> ArrayLike:
     """
     Returns either a list or numpy array
@@ -349,10 +355,10 @@ def get_indices_of_same_neighbors(indices: ArrayLike, mat: ArrayLike) -> ArrayLi
     neighbors = []
     for ind in indices:
         for ax in range(3):
-            for dir in range(2):
-                dir = 2 * dir - 1
+            for direction in range(2):
+                direction = 2 * direction - 1
                 ind2 = ind.copy()
-                ind2[ax] = ind2[ax] + dir
+                ind2[ax] = ind2[ax] + direction
                 if ind2[ax] >= 0 and ind2[ax] < d:
                     val2 = mat[tuple(ind2)]
                     if val == val2:
@@ -363,13 +369,14 @@ def get_indices_of_same_neighbors(indices: ArrayLike, mat: ArrayLike) -> ArrayLi
     return neighbors
 
 
+# noinspection PyChainedComparisons
 def get_same_neighbors_2d(mat2: ArrayLike, inds: ArrayLike, val: ArrayLike) -> ArrayLike:
     new_inds = list(inds)
     for ind in inds:
         for ax in range(2):
-            for dir in range(-1, 2, 2):
+            for direction in range(-1, 2, 2):
                 ind2 = ind.copy()
-                ind2[ax] += dir
+                ind2[ax] += direction
                 if ind2[ax] >= 0 and ind2[ax] < mat2.shape[ax]:
                     val2 = mat2[tuple(ind2)]
                     if val2 != val: continue
@@ -418,8 +425,8 @@ def get_chessboard_vertices(mat: ArrayLike, ax: ArrayLike, noc: ArrayLike, n: Ar
                         verts.append(ind3d)
     return chess, verts
 
-
-def is_connected_to_fixed_side_2d(inds: ArrayLike, fixed_sides: FixedSides, ax: ArrayLike, dim: int) -> bool:
+# TODO: is FixedSides should be iterable
+def is_connected_to_fixed_side_2d(inds: ArrayLike, fixed_sides, ax: ArrayLike, dim: int) -> bool:
     connected = False
     for side in fixed_sides:
         fax2d = [0, 0, 0]
@@ -449,27 +456,27 @@ def get_neighbors_2d(ind: ArrayLike, reg_inds: ArrayLike, lay_mat: ArrayLike, n:
             nind = [ind[0] + add0, ind[1] + add1]
 
             # FIND TYPE
-            type = -1
+            neighbor_type = -1
             val = None
             # Check if this index is in the list of region-included indices
             for rind in reg_inds:
                 if rind[0] == nind[0] and rind[1] == nind[1]:
-                    type = 0  # in region
+                    neighbor_type = 0  # in region
                     break
-            if type != 0:
+            if neighbor_type != 0:
                 # If there are out of bound indices they are free
                 if np.any(np.array(nind) < 0) or nind[0] >= lay_mat.shape[0] or nind[1] >= lay_mat.shape[1]:
-                    type = 1  # free
+                    neighbor_type = 1  # free
                     val = -1
                 elif lay_mat[tuple(nind)] < 0:
-                    type = 1  # free
+                    neighbor_type = 1  # free
                 else:
-                    type = 1  # blocked
+                    neighbor_type = 1  # blocked
 
-            if val == None:
+            if val is None:
                 val = lay_mat[tuple(nind)]
 
-            temp.append(type)
+            temp.append(neighbor_type)
             temp2.append(val)
         in_out.append(temp)
         values.append(temp2)
@@ -502,6 +509,7 @@ def get_region_outline(reg_inds: ArrayLike, lay_mat: ArrayLike, fixed_neighbors:
     return reg_verts
 
 
+# noinspection PyChainedComparisons
 def get_breakable_voxels(mat: ArrayLike, fixed_sides: FixedSides, sax: ArrayLike, n: ArrayLike):
     breakable = False
     outline_indices = []
@@ -555,11 +563,11 @@ def get_breakable_voxels(mat: ArrayLike, fixed_sides: FixedSides, sax: ArrayLike
                         ind3d = reg_ind.copy()
                         ind3d = list(ind3d)
                         ind3d.insert(pax, lay_num)
-                        for dir in range(-1, 2, 2):  # -1/1
+                        for direction in range(-1, 2, 2):  # -1/1
 
                             # check neigbor in direction
                             ind3d_dir = ind3d.copy()
-                            ind3d_dir[pax] += dir
+                            ind3d_dir[pax] += direction
                             if ind3d_dir[pax] >= 0 and ind3d_dir[pax] < dim:
                                 # Is there any material at all?
                                 val = mat[tuple(ind3d_dir)]
@@ -568,14 +576,14 @@ def get_breakable_voxels(mat: ArrayLike, fixed_sides: FixedSides, sax: ArrayLike
                                     attached_to_fragile = False
                                     ind2d_dir = ind3d_dir.copy()
                                     ind2d_dir.pop(pax)
-                                    for dir_reg_inds in potentially_fragile_reg_inds[lay_num + dir]:
+                                    for dir_reg_inds in potentially_fragile_reg_inds[lay_num + direction]:
                                         for dir_ind in dir_reg_inds:
                                             if dir_ind[0] == ind2d_dir[0] and dir_ind[1] == ind2d_dir[1]:
                                                 attached_to_fragile = True
                                                 break
                                     # need to check more steps later...####################################!!!!!!!!!!!!!!!
                                     if not attached_to_fragile:
-                                        fixed_neighbors[int((dir + 1) / 2)] = True
+                                        fixed_neighbors[int((direction + 1) / 2)] = True
 
                     if fixed_neighbors[0] == False or fixed_neighbors[1] == False:
                         breakable = True
@@ -593,28 +601,28 @@ def get_breakable_voxels(mat: ArrayLike, fixed_sides: FixedSides, sax: ArrayLike
                         outline = get_ordered_outline(outline)
                         outline.append(outline[0])
 
-                        for dir in range(0, 2):
+                        for direction in range(0, 2):
                             # if not fixed_neighbors[direction]: continue
                             for i in range(len(outline) - 1):
                                 for j in range(2):
                                     oind = outline[i + j].ind.copy()
                                     oind.insert(pax, lay_num)
-                                    oind[pax] += dir
+                                    oind[pax] += direction
                                     outline_indices.append(oind)
 
     return breakable, outline_indices, voxel_indices
 
 
 def is_fab_direction_ok(mat, ax, n) -> tuple[bool, int]:
-    fab_dir = 1
+    fab_direction = 1
     dim = len(mat)
-    for dir in range(2):
-        is_ok = True
+    is_ok = True
+    for direction in range(2):
         for i in range(dim):
             for j in range(dim):
                 found_first_same = False
                 for k in range(dim):
-                    if dir == 0: k = dim - k - 1
+                    if direction == 0: k = dim - k - 1
                     ind = [i, j]
                     ind.insert(ax, k)
                     val = mat[tuple(ind)]
@@ -625,9 +633,9 @@ def is_fab_direction_ok(mat, ax, n) -> tuple[bool, int]:
                 if not is_ok: break
             if not is_ok: break
         if is_ok:
-            fab_dir = dir
+            fab_direction = direction
             break
-    return is_ok, fab_dir
+    return is_ok, fab_direction
 
 
 def layer_mat(mat3d, ax, dim, lay_num):
@@ -666,10 +674,10 @@ def flood_all_nonneg(mat, floodval):
     start_len = len(inds)
     for ind in inds:
         for ax in range(3):
-            for dir in range(-1, 2, 2):
+            for direction in range(-1, 2, 2):
                 # define neighbor index
                 ind2 = np.copy(ind)
-                ind2[ax] += dir
+                ind2[ax] += direction
                 # within bounds?
                 if ind2[ax] < 0: continue
                 if ind2[ax] >= mat.shape[ax]: continue
@@ -741,9 +749,10 @@ def is_potentially_connected(mat, dim, noc, level):
     return potconn
 
 
+# noinspection PyAttributeOutsideInit
 class Evaluation:
-    def __init__(self, voxel_matrix, type, mainmesh=True):
-        self.mainmesh = mainmesh
+    def __init__(self, voxel_matrix, joint_type, main_mesh=True):
+        self.main_mesh = main_mesh
         self.valid = True
         self.slides = []
         self.number_of_slides = []
@@ -765,62 +774,62 @@ class Evaluation:
         self.friction_faces = []
         self.contact_nums = []
         self.contact_faces = []
-        self.fab_directions = self.update(voxel_matrix, type)
+        self.fab_directions = self.update(voxel_matrix, joint_type)
 
-    def update(self, voxel_matrix, type):
-        self.voxel_matrix_with_sides = add_fixed_sides(voxel_matrix, type.fixed.sides)
+    def update(self, voxel_matrix, joint_type):
+        self.voxel_matrix_with_sides = add_fixed_sides(voxel_matrix, joint_type.fixed.sides)
 
-        # Voxel connection and bridgeing
+        # Voxel connection and bridging
         self.connected = []
         self.bridged = []
         self.voxel_matrices_unbridged = []
-        for n in range(type.noc):
+        for n in range(joint_type.noc):
             self.connected.append(is_connected(self.voxel_matrix_with_sides, n))
             self.bridged.append(True)
             self.voxel_matrices_unbridged.append(None)
         self.voxel_matrix_connected = voxel_matrix.copy()
         self.voxel_matrix_unconnected = None
 
-        self.seperate_unconnected(voxel_matrix, type.fixed.sides, type.dim)
+        self.seperate_unconnected(voxel_matrix, joint_type.fixed.sides, joint_type.dim)
 
         # Bridging
-        voxel_matrix_connected_with_sides = add_fixed_sides(self.voxel_matrix_connected, type.fixed.sides)
-        for n in range(type.noc):
+        voxel_matrix_connected_with_sides = add_fixed_sides(self.voxel_matrix_connected, joint_type.fixed.sides)
+        for n in range(joint_type.noc):
             self.bridged[n] = is_connected(voxel_matrix_connected_with_sides, n)
             if not self.bridged[n]:
                 voxel_matrix_unbridged_1, voxel_matrix_unbridged_2 = self.seperate_unbridged(voxel_matrix,
-                                                                                             type.fixed.sides, type.dim,
+                                                                                             joint_type.fixed.sides, joint_type.dim,
                                                                                              n)
                 self.voxel_matrices_unbridged[n] = [voxel_matrix_unbridged_1, voxel_matrix_unbridged_2]
 
         # Fabricatability by direction constraint
         self.fab_direction_ok = []
-        fab_directions = list(range(type.noc))
-        for n in range(type.noc):
-            if n == 0 or n == type.noc - 1:
+        fab_directions = list(range(joint_type.noc))
+        for n in range(joint_type.noc):
+            if n == 0 or n == joint_type.noc - 1:
                 self.fab_direction_ok.append(True)
                 if n == 0:
                     fab_directions[n] = 0
                 else:
                     fab_directions[n] = 1
             else:
-                fab_ok, fab_dir = is_fab_direction_ok(voxel_matrix, type.sax, n)
+                fab_ok, fab_dir = is_fab_direction_ok(voxel_matrix, joint_type.sax, n)
                 fab_directions[n] = fab_dir
                 self.fab_direction_ok.append(fab_ok)
 
         # Chessboard
         self.checker = []
         self.checker_vertices = []
-        for n in range(type.noc):
-            check, verts = get_chessboard_vertices(voxel_matrix, type.sax, type.noc, n)
+        for n in range(joint_type.noc):
+            check, verts = get_chessboard_vertices(voxel_matrix, joint_type.sax, joint_type.noc, n)
             self.checker.append(check)
             self.checker_vertices.append(verts)
 
         # Sliding directions
-        self.slides, self.number_of_slides = get_sliding_directions(self.voxel_matrix_with_sides, type.noc)
+        self.slides, self.number_of_slides = get_sliding_directions(self.voxel_matrix_with_sides, joint_type.noc)
         self.interlock = True
-        for n in range(type.noc):
-            if (n == 0 or n == type.noc - 1):
+        for n in range(joint_type.noc):
+            if n == 0 or n == joint_type.noc - 1:
                 if self.number_of_slides[n] <= 1:
                     self.interlocks.append(True)
                 else:
@@ -838,17 +847,17 @@ class Evaluation:
         self.friction_faces = []
         self.contact_nums = []
         self.contact_faces = []
-        for n in range(type.noc):
+        for n in range(joint_type.noc):
             friction, ffaces, contact, cfaces, = get_friction_and_contact_areas(voxel_matrix, self.slides[n],
-                                                                                type.fixed.sides, n)
+                                                                                joint_type.fixed.sides, n)
             self.friction_nums.append(friction)
             self.friction_faces.append(ffaces)
             self.contact_nums.append(contact)
             self.contact_faces.append(cfaces)
 
         # Grain direction
-        for n in range(type.noc):
-            brk, brk_oinds, brk_vinds = get_breakable_voxels(voxel_matrix, type.fixed.sides[n], type.sax, n)
+        for n in range(joint_type.noc):
+            brk, brk_oinds, brk_vinds = get_breakable_voxels(voxel_matrix, joint_type.fixed.sides[n], joint_type.sax, n)
             self.breakable.append(brk)
             self.breakable_outline_inds.append(brk_oinds)
             self.breakable_voxel_inds.append(brk_vinds)
@@ -966,7 +975,8 @@ class EvaluationOne:
         if not self.interlock: return
 
         # Durability
-        brk, brk_inds = get_breakable_voxels(voxel_matrix, fixed_sides[level], sax, level)
+        # TODO: figure out if I need the other return
+        brk, brk_inds, _ = get_breakable_voxels(voxel_matrix, fixed_sides[level], sax, level)
         if brk: self.nofragile = False
         if not self.nofragile: return
 

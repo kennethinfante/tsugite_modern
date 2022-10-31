@@ -12,9 +12,8 @@ class ElementProperties:
         self.n = n
 
 class Buffer:
-    def __init__(self, parent):
-        # parent is the JointType, cannot import for joint_type hinting cause it results to circular dependency
-        self.parent = parent
+    def __init__(self, joint_type):
+        self.joint_type = joint_type                            # parent is JointType
         self.VBO = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.VBO)
         self.EBO = glGenBuffers(1)
@@ -51,11 +50,11 @@ class Buffer:
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 400, 400, 0, GL_RGB, GL_UNSIGNED_BYTE, self.img_data_cont)
 
         try:
-            cnt = 6*len(self.parent.vertices)
-            return glBufferData(GL_ARRAY_BUFFER, cnt, self.parent.vertices, GL_DYNAMIC_DRAW)
+            cnt = 6*len(self.joint_type.vertices)
+            return glBufferData(GL_ARRAY_BUFFER, cnt, self.joint_type.vertices, GL_DYNAMIC_DRAW)
         except:
             print("--------------------------ERROR IN ARRAY BUFFER WRAPPER -------------------------------------")
 
     def buffer_indices(self):
-        cnt = 4*len(self.parent.indices)
-        return glBufferData(GL_ELEMENT_ARRAY_BUFFER, cnt, self.parent.indices, GL_DYNAMIC_DRAW)
+        cnt = 4*len(self.joint_type.indices)
+        return glBufferData(GL_ELEMENT_ARRAY_BUFFER, cnt, self.joint_type.indices, GL_DYNAMIC_DRAW)

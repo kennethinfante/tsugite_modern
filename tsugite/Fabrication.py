@@ -5,6 +5,8 @@ import os
 
 from TypingHelper import *
 
+
+# noinspection PyAttributeOutsideInit
 class MillVertex:
     def __init__(self, pt: ArrayLike,
                  is_tra: bool = False,
@@ -116,7 +118,8 @@ def arc_points(st: ArrayLike, en: ArrayLike, ctr0: ArrayLike, ctr1: ArrayLike, a
 
 
 class RegionVertex:
-    def __init__(self, ind: list[int], abs_ind: list[int], neighbors: ArrayLike, neighbor_values: list[list[Optional[int]]],
+    def __init__(self, ind: list[int], abs_ind: list[int], neighbors: ArrayLike,
+                 neighbor_values: list[list[Optional[int]]],
                  dia: bool = False,
                  minus_one_neighbor: bool = False) -> None:
         self.ind = ind
@@ -136,6 +139,7 @@ class RegionVertex:
         self.flat_neighbor_values = self.neighbor_values.flatten()
 
 
+# noinspection PyChainedComparisons
 class RoughPixel:
     def __init__(self, ind: ArrayLike, mat: ArrayLike, pad_loc: tuple, dim, n) -> None:
         self.ind = ind
@@ -152,23 +156,20 @@ class RoughPixel:
         # Blocked=1
         for ax in range(2):
             temp = []
-            for dir in range(-1, 2, 2):
+            for direction in range(-1, 2, 2):
                 nind = self.ind.copy()
-                nind[ax] += dir
-                type = 0
+                nind[ax] += direction
+                neighbor_type = 0
                 if nind[0] >= 0 and nind[0] < mat.shape[0] and nind[1] >= 0 and nind[1] < mat.shape[1]:
                     val = mat[tuple(nind)]
-                    if val == n: type = 1
-                temp.append(type)
+                    if val == n: neighbor_type = 1
+                temp.append(neighbor_type)
             self.neighbors.append(temp)
         self.flat_neighbors = [x for sublist in self.neighbors for x in sublist]
 
 
-
-
-
 class Fabrication:
-    def __init__(self, parent,  # from Analysis, parent is JointType
+    def __init__(self, joint_type,                                          # parent is JointType
                  tolerances: float = 0.15,
                  bit_diameter: float = 6.00,
                  fab_ext: FabricationExt = "gcode",
@@ -176,15 +177,15 @@ class Fabrication:
                  arc_interp: bool = True,
                  fab_speed: int = 400,
                  spindle_speed: int = 6000) -> None:
-        self.parent = parent
+        self.joint_type = joint_type
         self.real_dia = bit_diameter  # milling bit radius in mm
         self.tolerances = tolerances  # 0.10 #tolerance in mm
         self.radius = 0.5 * self.real_dia - self.tolerances
         self.diameter = 2 * self.radius
         # does v means voxel, vector, vertical
-        self.vdia = self.diameter / self.parent.ratio
-        self.vrad = self.radius / self.parent.ratio
-        self.vtol = self.tolerances / self.parent.ratio
+        self.vdia = self.diameter / self.joint_type.ratio
+        self.vrad = self.radius / self.joint_type.ratio
+        self.vtol = self.tolerances / self.joint_type.ratio
 
         self.depth = 1.5  # milling depth in mm
         self.align_ax = align_ax
@@ -195,18 +196,18 @@ class Fabrication:
 
     def export_gcode(self, filename_tsu: FilePath = os.getcwd() + os.sep + "joint.tsu") -> None:
         # make sure that the z axis of the gcode is facing up
-        fax = self.parent.sax
+        fax = self.joint_type.sax
         coords = [0, 1]
         coords.insert(fax, 2)
         #
         d = 3  # =precision / no of decimals to write
         names = ["A", "B", "C", "D", "E", "F"]
-        for n in range(self.parent.noc):
-            fdir = self.parent.mesh.fab_directions[n]
-            comp_ax = self.parent.fixed.sides[n][0].ax
-            comp_dir = self.parent.fixed.sides[n][0].direction  # component direction
-            comp_vec = self.parent.pos_vecs[comp_ax]
-            if comp_dir == 0 and comp_ax != self.parent.sax: comp_vec = -comp_vec
+        for n in range(self.joint_type.noc):
+            fdir = self.joint_type.mesh.fab_directions[n]
+            comp_ax = self.joint_type.fixed.sides[n][0].ax
+            comp_dir = self.joint_type.fixed.sides[n][0].direction  # component direction
+            comp_vec = self.joint_type.pos_vecs[comp_ax]
+            if comp_dir == 0 and comp_ax != self.joint_type.sax: comp_vec = -comp_vec
             comp_vec = np.array([comp_vec[coords[0]], comp_vec[coords[1]], comp_vec[coords[2]]])
             comp_vec = comp_vec / np.linalg.norm(comp_vec)  # unitize
             zax = np.array([0, 0, 1])
@@ -219,7 +220,7 @@ class Fabrication:
             file_name = filename_tsu[:-4] + "_" + names[n] + "." + self.fab_ext
             file = open(file_name, "w")
             if self.fab_ext == "gcode" or self.fab_ext == "nc":
-                ###initialization .goce and .nc
+                # initialization .goce and .nc
                 file.write("%\n")
                 file.write("G90 (Absolute [G91 is incremental])\n")
                 file.write("G17 (set XY plane for circle path)\n")
@@ -240,11 +241,11 @@ class Fabrication:
             else:
                 print("Unknown extension:", self.fab_ext)
 
-            ###content
-            for i, mv in enumerate(self.parent.gcodeverts[n]):
-                mv.scale_and_swap(fax, fdir, self.parent.ratio, self.parent.real_tim_dims, coords, d)
+            # content
+            for i, mv in enumerate(self.joint_type.gcodeverts[n]):
+                mv.scale_and_swap(fax, fdir, self.joint_type.ratio, self.joint_type.real_tim_dims, coords, d)
                 if comp_ax != fax: mv.rotate(rot_ang, d)
-                if i > 0: pmv = self.parent.gcodeverts[n][i - 1]
+                if i > 0: pmv = self.joint_type.gcodeverts[n][i - 1]
                 # check segment angle
                 arc = False
                 clockwise = False

@@ -35,11 +35,11 @@ class FixedSide:
         return unique
 
 class FixedSides:
-    def __init__(self, joint_type,
+    def __init__(self, joint_type,                                      # parent is JointType
                  side_str: Optional[str] = None,
                  fs: Optional[list[FixedSide]] = None) -> None:
 
-        self.parent = joint_type                                        # TODO
+        self.joint_type = joint_type
         if side_str is not None:
             self.sides_from_string(side_str)
         elif fs is not None:
@@ -74,12 +74,12 @@ class FixedSides:
                 if not blocked: self.unblocked.append(FixedSide(ax, direction))
 
         # List unblocked ORIENTATIONS ??????????????
-        self.parent.rot = True
+        self.joint_type.rot = True
         if self.sides != None:
             for sides in self.sides:
                 # if one or more component axes are aligned with the sliding axes (sax), rotation cannot be performed ?????????
-                if sides[0].ax == self.parent.sax:
-                    self.parent.rot = False
+                if sides[0].ax == self.joint_type.sax:
+                    self.joint_type.rot = False
                     break
 
 

@@ -22,10 +22,10 @@ from Show import Show
 
 # noinspection PyAttributeOutsideInit
 class GLWidget(QGLWidget):
-    def __init__(self, parent=None, *__args):
+    def __init__(self, mainWindow=None, *__args):
         super().__init__(*__args)
-        self.parent = parent
-        QGLWidget.__init__(self, parent)
+        self.parent = mainWindow                        # cannot rename attribute because it extends QGLWidget class
+        QGLWidget.__init__(self, mainWindow)
         # self.setMinimumSize(800, 800)
         self.setMouseTracking(True)
         self.click_time = time.time()

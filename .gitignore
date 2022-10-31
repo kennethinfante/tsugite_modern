@@ -38,6 +38,7 @@
 # Folders to exclude #
 ######################
 Exercise_Files/
+old_images/
 .idea
 
 # Python Specifics #

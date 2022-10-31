@@ -11,7 +11,7 @@ from JointTypes import JointType
 # noinspection PyAttributeOutsideInit,PyChainedComparisons
 class Show:
     def __init__(self, _glWidget, joint_type: JointType) -> None:       # parent is GLWidget
-        self.parent = _glWidget
+        self._glWidget = _glWidget
         self.joint_type = joint_type
         self.view = ViewSettings()
         self.create_color_shaders()
@@ -232,9 +232,9 @@ class Show:
         self.joint_type.mesh.select.suggestions_state = -1
         self.joint_type.mesh.select.gallery_state = -1
         if not self.view.gallery:
-            if xpos > self.parent.width - self.parent.wstep:  # suggestion side
-                if ypos > 0 and ypos < self.parent.height:
-                    index = int(ypos / self.parent.hstep)
+            if xpos > self._glWidget.width - self._glWidget.wstep:  # suggestion side
+                if ypos > 0 and ypos < self._glWidget.height:
+                    index = int(ypos / self._glWidget.hstep)
                     if self.joint_type.mesh.select.suggestions_state != index:
                         self.joint_type.mesh.select.suggestions_state = index
 
@@ -364,14 +364,14 @@ class Show:
         glLineStipple(3, 0xAAAA)  # dashed line
         glEnable(GL_LINE_STIPPLE)
         if hidden and self.view.show_hidden_lines:
-            for n in range(mesh.parent.noc):
+            for n in range(mesh.joint_type.noc):
                 G0 = [mesh.indices_lns[n]]
                 G1 = [mesh.indices_fall[n]]
                 self.draw_geometries_with_excluded_area(G0, G1)
         glPopAttrib()
 
         ############################ Draw visible lines #############################
-        for n in range(mesh.parent.noc):
+        for n in range(mesh.joint_type.noc):
             if not mesh.main_mesh or (
                     mesh.eval.interlocks[n] and self.view.show_feedback) or not self.view.show_feedback:
                 glUniform3f(5, 0.0, 0.0, 0.0)  # black
@@ -386,7 +386,7 @@ class Show:
         if mesh.main_mesh:
             ################ When joint is fully open, draw dahsed lines ################
             if hidden and not self.view.hidden[0] and not self.view.hidden[1] and self.view.open_ratio == 1 + 0.5 * (
-                    mesh.parent.noc - 2):
+                    mesh.joint_type.noc - 2):
                 glUniform3f(5, 0.0, 0.0, 0.0)  # black
                 glPushAttrib(GL_ENABLE_BIT)
                 glLineWidth(2)
@@ -419,7 +419,7 @@ class Show:
         # 1. Draw hidden geometry
         col = [1.0, 0.8, 0.7]  # light red orange
         glUniform3f(5, col[0], col[1], col[2])
-        for n in range(self.joint_type.mesh.parent.noc):
+        for n in range(self.joint_type.mesh.joint_type.noc):
             if not self.joint_type.mesh.eval.connected[n]:
                 self.draw_geometries([self.joint_type.mesh.indices_not_fcon[n]])
 
@@ -448,7 +448,7 @@ class Show:
         # 1. Draw hidden geometry
         glUniform3f(5, 1.0, 0.2, 0.0)  # red orange
         glLineWidth(8)
-        for n in range(self.joint_type.mesh.parent.noc):
+        for n in range(self.joint_type.mesh.joint_type.noc):
             if self.joint_type.mesh.eval.checker[n]:
                 self.draw_geometries([self.joint_type.mesh.indices_chess_lines[n]])
         glUniform3f(5, 0.0, 0.0, 0.0)  # back to black
