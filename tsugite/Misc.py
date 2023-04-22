@@ -75,12 +75,9 @@ class FixedSides:
 
         # List unblocked ORIENTATIONS ??????????????
         self.joint_type.rot = True
-        if self.sides != None:
+        if self.sides is not None:
             for sides in self.sides:
                 # if one or more component axes are aligned with the sliding axes (sax), rotation cannot be performed ?????????
                 if sides[0].ax == self.joint_type.sax:
                     self.joint_type.rot = False
                     break
-
-
-
