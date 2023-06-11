@@ -3,6 +3,7 @@ from numpy.typing import ArrayLike, DTypeLike
 from OpenGL.constant import Constant as glConstant
 
 # aliases
+# ArrayLike - can be a list, set, np.array
 DegreeArray = ArrayLike        # for the return joint_type of arccos
 DegreeFloat = float            # for the return joint_type of arccos
 ZeroArray = ArrayLike

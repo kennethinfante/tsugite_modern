@@ -9,7 +9,7 @@ from TypingHelper import *
 # noinspection PyAttributeOutsideInit
 class MillVertex:
     def __init__(self, pt: ArrayLike,
-                 is_tra: bool = False,
+                 is_traversing: bool = False,
                  is_arc: bool = False,
                  arc_ctr: ArrayLike = np.array([0, 0, 0])) -> None:
 
@@ -19,10 +19,10 @@ class MillVertex:
         self.z = pt[2]
         self.is_arc = is_arc
         self.arc_ctr = np.array(arc_ctr)
-        self.is_tra = is_tra  # is traversing, gcode_mode G0 (max fab_speed) (otherwise G1)
+        self.is_traversing = is_traversing  # gcode_mode G0 (max fab_speed) (otherwise G1)
 
     def scale_and_swap(self, ax, direction: Direction, ratio, real_tim_dims, coords: list[int], d: int) -> None:
-        # sawp
+        # swap
         xyz = [ratio * self.x, ratio * self.y, ratio * self.z]
         if ax == 2: xyz[1] = -xyz[1]
         xyz = xyz[coords[0]], xyz[coords[1]], xyz[coords[2]]
@@ -71,7 +71,7 @@ def angle_between(vector_1: ArrayLike, vector_2: ArrayLike, normal_vector: list 
     return angle
 
 
-def rotate_vector_around_axis(vec: list = [3, 5, 0],
+def rotate_vector_around_axis(vec: ArrayLike = [3, 5, 0],
                               axis: list = [4, 4, 1],
                               theta: float = 1.2) -> Any:  # np.dot can return a scalar or an array
     axis = np.asarray(axis)
@@ -278,7 +278,7 @@ class Fabrication:
                             if mv.z != pmv.z: file.write(" Z" + str(round(pt[2], 3)))
                             file.write("\n")
                     elif i == 0 or mv.x != pmv.x or mv.y != pmv.y or mv.z != pmv.z:
-                        if mv.is_tra:
+                        if mv.is_traversing:
                             file.write("G0")
                         else:
                             file.write("G1")
@@ -299,7 +299,7 @@ class Fabrication:
                             file.write("M3," + str(round(pt[0], 3)) + "," + str(round(pt[1], 3)) + "," + str(
                                 round(pt[2], 3)) + "\n")
                     elif i == 0 or mv.x != pmv.x or mv.y != pmv.y or mv.z != pmv.z:
-                        if mv.is_tra:
+                        if mv.is_traversing:
                             file.write("J3,")
                         else:
                             file.write("M3,")

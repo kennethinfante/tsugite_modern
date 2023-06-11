@@ -986,8 +986,8 @@ class JointType:
         above_origin_vert = [0, 0, 0]
         above_origin_vert[self.sax] = last_z - (2 * fdir - 1) * extra_zheight
 
-        mverts.append(MillVertex(origin_vert, is_tra=True))
-        mverts.append(MillVertex(above_origin_vert, is_tra=True))
+        mverts.append(MillVertex(origin_vert, is_traversing=True))
+        mverts.append(MillVertex(above_origin_vert, is_traversing=True))
         verts.extend([origin_vert[0], origin_vert[1], origin_vert[2], r, g, b, tx, ty])
         verts.extend([above_origin_vert[0], above_origin_vert[1], above_origin_vert[2], r, g, b, tx, ty])
 
@@ -1005,13 +1005,13 @@ class JointType:
         start_vert = [outline[0].x, outline[0].y, outline[0].z]
         safe_height = outline[0].pt[self.sax] - (2 * fdir - 1) * (lay_num * self.voxel_sizes[self.sax] + 2 * dep)
         start_vert[self.sax] = safe_height
-        mverts.append(MillVertex(start_vert, is_tra=True))
+        mverts.append(MillVertex(start_vert, is_traversing=True))
         verts.extend([start_vert[0], start_vert[1], start_vert[2], r, g, b, tx, ty])
         if lay_num != 0:
             start_vert2 = [outline[0].x, outline[0].y, outline[0].z]
             safe_height2 = outline[0].pt[self.sax] - (2 * fdir - 1) * dep
             start_vert2[self.sax] = safe_height2
-            mverts.append(MillVertex(start_vert2, is_tra=True))
+            mverts.append(MillVertex(start_vert2, is_traversing=True))
             verts.extend([start_vert2[0], start_vert2[1], start_vert2[2], r, g, b, tx, ty])
 
         # add layers with Z-height
@@ -1332,7 +1332,7 @@ def get_segment_proportions(outline):
     # add endpoint
     end_vert = [outline[0].x, outline[0].y, outline[0].z]
     end_vert[joint_type.sax] = safe_height
-    mverts.append(MillVertex(end_vert, is_tra=True))
+    mverts.append(MillVertex(end_vert, is_traversing=True))
     verts.extend([end_vert[0], end_vert[1], end_vert[2], r, g, b, tx, ty])
 
     return verts, mverts
