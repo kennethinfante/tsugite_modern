@@ -33,6 +33,8 @@ class GLWidget(QGLWidget):
         self.y = 0
 
     def initializeGL(self):
+
+        print(f"Opengl version: {glGetString(GL_VERSION)}")
         self.qglClearColor(QColor(255, 255, 255))
         glEnable(GL_DEPTH_TEST)  # enable depth testing
         sax = self.parent.findChild(QComboBox, "comboSLIDE").currentIndex()

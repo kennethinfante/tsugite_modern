@@ -19,7 +19,7 @@ HoveringState = int           # -1: nothing, 0: hovering first, 1: hovering seco
 TimberState = int             # -1: nothing, 0: hovered, 1: adding, 2: pulling, 10: timber hovered, 12: timber pulled
 NeighborType = int            # 0 = in region 1 = outside region, block 2 = outside region, free
 
-FxSide = int                  # Implementation refers to 'Fixed Sides' as which of the six sides of the joint are
+FixSide = int                  # Implementation refers to 'Fixed Sides' as which of the six sides of the joint are
                               # connected to the main body of the timber. One fixed side indicates that the joint is located at the
                               # end of a timber, which is the case for the timbers of an L-joint.
                               # Two fixed sides means that the joint is located somewhere in
